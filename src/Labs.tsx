@@ -1,119 +1,2193 @@
-import { useState } from 'react';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Cable, Check, CheckCircle2, ChevronRight, CircleHelp, Cloud, Code2, Globe2, Layers3, LockKeyhole, Monitor, Network, Play, Radio, RotateCcw, Route, Search, Server, ShieldCheck, Terminal, Wifi, X, Zap } from 'lucide-react';
-import { Facts, Note, Tabs, Tag } from './App';
-import { type Page } from './data';
-import { dnsTrace, ipNumber, longestPrefix, prefixMatches, transmissionTime, congestionStep } from './model.js';
-import { Guide } from './Guide';
+import { useState } from "react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  BookOpen,
+  Cable,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleHelp,
+  Cloud,
+  Code2,
+  Globe2,
+  Layers3,
+  LockKeyhole,
+  Monitor,
+  Network,
+  Play,
+  Radio,
+  RotateCcw,
+  Route,
+  Search,
+  Server,
+  ShieldCheck,
+  Terminal,
+  Wifi,
+  X,
+  Zap,
+} from "lucide-react";
+import { Facts, Note, Tabs, Tag } from "./App";
+import { type Page } from "./data";
+import {
+  dnsTrace,
+  ipNumber,
+  longestPrefix,
+  prefixMatches,
+  transmissionTime,
+  congestionStep,
+} from "./model.js";
+import { Guide } from "./Guide";
 
-const labMeta:Record<string,{num:string,title:string,accent:string,description:string,tags:string[]}>= {
- dns:{num:'01',title:'A name. A question.',accent:'A distributed answer.',description:'Follow a DNS lookup through the hierarchy—and see how a cache changes the journey.',tags:['DNS','Caching','Delegation']},
- tcp:{num:'02',title:'What does',accent:'“connected” mean?',description:'Two kernels. Two state machines. An ordered stream built from individual packets.',tags:['TCP','Sockets','Reliability']},
- routing:{num:'03',title:'One destination.',accent:'A decision at every hop.',description:'See how prefixes, routing policy, and internal topology become a forwarding decision.',tags:['Longest prefix match','BGP','OSPF']},
- tls:{num:'04',title:'From encrypted bytes',accent:'to visible pixels.',description:'Connect identity, encryption, HTTP, and the browser’s rendering pipeline.',tags:['TLS 1.3','HTTP/2 & HTTP/3','Rendering']},
- vpn:{num:'05',title:'A packet',accent:'inside a packet.',description:'Unwrap a VPN tunnel and see exactly who can observe which part of your traffic.',tags:['Encapsulation','Routing','WireGuard']},
- physical:{num:'06',title:'The internet has',accent:'a physical side.',description:'Bits become electrical changes, light, or radio. Explore the links that carry them.',tags:['Copper','Fiber','Wireless']},
- switching:{num:'07',title:'Before the next router,',accent:'the local network.',description:'Discover how frames move through switches, VLANs, trunks, and redundant links.',tags:['Ethernet','802.1Q','STP']}
+const labMeta: Record<
+  string,
+  {
+    num: string;
+    title: string;
+    accent: string;
+    description: string;
+    tags: string[];
+  }
+> = {
+  dns: {
+    num: "01",
+    title: "A name. A question.",
+    accent: "A distributed answer.",
+    description:
+      "Follow a DNS lookup through the hierarchy—and see how a cache changes the journey.",
+    tags: ["DNS", "Caching", "Delegation"],
+  },
+  tcp: {
+    num: "02",
+    title: "What does",
+    accent: "“connected” mean?",
+    description:
+      "Two kernels. Two state machines. An ordered stream built from individual packets.",
+    tags: ["TCP", "Sockets", "Reliability"],
+  },
+  routing: {
+    num: "03",
+    title: "One destination.",
+    accent: "A decision at every hop.",
+    description:
+      "See how prefixes, routing policy, and internal topology become a forwarding decision.",
+    tags: ["Longest prefix match", "BGP", "OSPF"],
+  },
+  tls: {
+    num: "04",
+    title: "From encrypted bytes",
+    accent: "to visible pixels.",
+    description:
+      "Connect identity, encryption, HTTP, and the browser’s rendering pipeline.",
+    tags: ["TLS 1.3", "HTTP/2 & HTTP/3", "Rendering"],
+  },
+  vpn: {
+    num: "05",
+    title: "A packet",
+    accent: "inside a packet.",
+    description:
+      "Unwrap a VPN tunnel and see exactly who can observe which part of your traffic.",
+    tags: ["Encapsulation", "Routing", "WireGuard"],
+  },
+  physical: {
+    num: "06",
+    title: "The internet has",
+    accent: "a physical side.",
+    description:
+      "Bits become electrical changes, light, or radio. Explore the links that carry them.",
+    tags: ["Copper", "Fiber", "Wireless"],
+  },
+  switching: {
+    num: "07",
+    title: "Before the next router,",
+    accent: "the local network.",
+    description:
+      "Discover how frames move through switches, VLANs, trunks, and redundant links.",
+    tags: ["Ethernet", "802.1Q", "STP"],
+  },
 };
-export function Labs({page,target,engineer,navigate,complete}:{page:Page,target:{host:string,href:string,path:string},engineer:boolean,navigate:(p:Page)=>void,complete:()=>void}){
- if(page==='guide')return <Guide navigate={navigate}/>;
- const m=labMeta[page];
- return <div className="page-content lab-page"><button className="back-link" onClick={()=>navigate('journey')}><ArrowLeft size={14}/>Back to the journey</button><div className="page-heading"><div><div className="eyebrow"><span className="tiny-line"/> DEEP DIVE {m.num} <span className="eyebrow-separator">/</span> INTERACTIVE LAB</div><h1>{m.title}<br/><span>{m.accent}</span></h1><p>{m.description}</p></div><span className="lab-watermark">{m.num}</span></div><div className="lab-tags">{m.tags.map(t=><Tag color="gray" key={t}>{t}</Tag>)}{engineer&&<Tag>ENGINEER DETAILS ON</Tag>}</div>
- {page==='dns'?<DnsLab host={target.host} engineer={engineer}/>:page==='tcp'?<TcpLab engineer={engineer}/>:page==='routing'?<RoutingLab engineer={engineer}/>:page==='tls'?<TlsLab host={target.host} path={target.path} engineer={engineer}/>:page==='vpn'?<VpnLab engineer={engineer}/>:page==='physical'?<PhysicalLab/>:<SwitchingLab engineer={engineer}/>}
- <KnowledgeCheck key={page} page={page} complete={complete}/></div>
+export function Labs({
+  page,
+  target,
+  engineer,
+  navigate,
+  complete,
+}: {
+  page: Page;
+  target: { host: string; href: string; path: string };
+  engineer: boolean;
+  navigate: (p: Page) => void;
+  complete: () => void;
+}) {
+  if (page === "guide") return <Guide navigate={navigate} />;
+  const m = labMeta[page];
+  return (
+    <div className="page-content lab-page">
+      <button className="back-link" onClick={() => navigate("journey")}>
+        <ArrowLeft size={14} />
+        Back to the journey
+      </button>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">
+            <span className="tiny-line" /> DEEP DIVE {m.num}{" "}
+            <span className="eyebrow-separator">/</span> INTERACTIVE LAB
+          </div>
+          <h1>
+            {m.title}
+            <br />
+            <span>{m.accent}</span>
+          </h1>
+          <p>{m.description}</p>
+        </div>
+        <span className="lab-watermark">{m.num}</span>
+      </div>
+      <div className="lab-tags">
+        {m.tags.map((t) => (
+          <Tag color="gray" key={t}>
+            {t}
+          </Tag>
+        ))}
+        {engineer && <Tag>ENGINEER DETAILS ON</Tag>}
+      </div>
+      {page === "dns" ? (
+        <DnsLab host={target.host} engineer={engineer} />
+      ) : page === "tcp" ? (
+        <TcpLab engineer={engineer} />
+      ) : page === "routing" ? (
+        <RoutingLab engineer={engineer} />
+      ) : page === "tls" ? (
+        <TlsLab host={target.host} path={target.path} engineer={engineer} />
+      ) : page === "vpn" ? (
+        <VpnLab engineer={engineer} />
+      ) : page === "physical" ? (
+        <PhysicalLab />
+      ) : (
+        <SwitchingLab engineer={engineer} />
+      )}
+      <KnowledgeCheck key={page} page={page} complete={complete} />
+    </div>
+  );
 }
-function LabHeader({title,children}:{title:string,children?:React.ReactNode}){return <div className="lab-card-header"><h2>{title}</h2><div>{children}</div></div>}
-function Toggle({checked,onChange,label}:{checked:boolean,onChange:()=>void,label:string}){return <button className="toggle-label" role="switch" aria-checked={checked} onClick={onChange}><span className={`toggle ${checked?'on':''}`}><i/></span>{label}</button>}
-function TerminalBox({title='DECODED VIEW',children}:{title?:string,children:React.ReactNode}){return <div className="terminal-box"><div><span/><span/><span/><b>{title}</b></div><pre>{children}</pre></div>}
-function DnsLab({host,engineer}:{host:string,engineer:boolean}){
- const [cache,setCache]=useState(false),[step,setStep]=useState(0);const trace=dnsTrace(host,cache);const event=trace[step];
- const nodes=['Browser','Recursive resolver','Root server','TLD server','Authoritative server'];
- return <><section className="panel"><LabHeader title="Follow the lookup"><Toggle label="Warm browser / OS cache" checked={cache} onChange={()=>{setCache(!cache);setStep(0)}}/></LabHeader><div className="dns-visual"><div className="dns-participants">{nodes.map((n,i)=><div key={n} className={`${event.from===n||event.to===n?'active':''} ${cache&&i>0?'dimmed':''}`}><span>{i===0?<Monitor/>:i===1?<Search/>:<Server/>}</span><b>{n}</b><small>{['Stub resolver','Does the legwork','The . zone',`.${host.split('.').at(-1)} zone`,'The zone owner'][i]}</small></div>)}</div><div className="dns-messages">{trace.map((e,i)=><button key={i} onClick={()=>setStep(i)} className={`${i===step?'active':''} ${i>step?'future':''}`}><span className="dns-message-number">{i+1}</span><span className="dns-message-route">{e.from}<ArrowRight size={14}/>{e.to}</span><code>{e.text}</code>{i<step?<Check size={15}/>:<ChevronRight size={15}/>}</button>)}</div></div><div className="lab-toolbar"><button className="secondary-button" onClick={()=>setStep(0)}><RotateCcw size={14}/>Reset</button><span>Exchange {step+1} of {trace.length}</span><button className="primary-button" disabled={step===trace.length-1} onClick={()=>setStep(s=>s+1)}>Next exchange <ArrowRight size={15}/></button></div></section><div className="two-column"><section className="panel text-panel"><Tag>{cache?'CACHE HIT':'CACHE MISS'}</Tag><h2>{event.text}</h2><p>{event.detail}</p><Note>The recursive resolver makes the iterative queries. Your browser does not contact every root, TLD, and authoritative server itself.</Note></section><TerminalBox title="DNS RESPONSE · ILLUSTRATIVE">{`; ${host} IN A\n;; flags: qr rd ra; status: NOERROR\n;; ANSWER SECTION:\n${host}.  ${cache?'240':'300'}  IN  A  203.0.113.80\n\n; TTL is time to keep a record,\n; not the IP packet hop limit.`}</TerminalBox></div>{engineer&&<DeepDetails items={[
- ['Recursion, delegation, and glue','RD requests recursive service; RA indicates that the server supports it. Referrals carry NS records. In-bailiwick nameservers can require glue to avoid circular resolution dependencies. An authoritative answer sets AA.'],
- ['Caching, negatives, and aliases','Positive records expire by TTL. NXDOMAIN and NODATA can also be cached according to the zone’s SOA information. A CNAME points to another name; the resolver follows it, with loop protection. Cache state at each resolver can shorten this illustrated path.'],
- ['Transport and validation','UDP/53 is common; truncation (TC) can trigger TCP retry. EDNS supports larger DNS messages. DoT and DoH protect the client-to-resolver transport. DNSSEC verifies signatures along a trust chain; it does not hide the question.'],
- ['IPv6 and service discovery','AAAA supplies IPv6 addresses. HTTPS/SVCB records can advertise service parameters. Dual-stack clients may use Happy Eyeballs to race viable address families; the first DNS response alone does not dictate the winner.']
- ]}/>}</>
+function LabHeader({
+  title,
+  children,
+}: {
+  title: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="lab-card-header">
+      <h2>{title}</h2>
+      <div>{children}</div>
+    </div>
+  );
+}
+function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      className="toggle-label"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+    >
+      <span className={`toggle ${checked ? "on" : ""}`}>
+        <i />
+      </span>
+      {label}
+    </button>
+  );
+}
+function TerminalBox({
+  title = "DECODED VIEW",
+  children,
+}: {
+  title?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="terminal-box">
+      <div>
+        <span />
+        <span />
+        <span />
+        <b>{title}</b>
+      </div>
+      <pre>{children}</pre>
+    </div>
+  );
+}
+function DnsLab({ host, engineer }: { host: string; engineer: boolean }) {
+  const [cache, setCache] = useState(false),
+    [step, setStep] = useState(0);
+  const trace = dnsTrace(host, cache);
+  const event = trace[step];
+  const nodes = [
+    "Browser",
+    "Recursive resolver",
+    "Root server",
+    "TLD server",
+    "Authoritative server",
+  ];
+  return (
+    <>
+      <section className="panel">
+        <LabHeader title="Follow the lookup">
+          <Toggle
+            label="Warm browser / OS cache"
+            checked={cache}
+            onChange={() => {
+              setCache(!cache);
+              setStep(0);
+            }}
+          />
+        </LabHeader>
+        <div className="dns-visual">
+          <div className="dns-participants">
+            {nodes.map((n, i) => (
+              <div
+                key={n}
+                className={`${event.from === n || event.to === n ? "active" : ""} ${cache && i > 0 ? "dimmed" : ""}`}
+              >
+                <span>
+                  {i === 0 ? <Monitor /> : i === 1 ? <Search /> : <Server />}
+                </span>
+                <b>{n}</b>
+                <small>
+                  {
+                    [
+                      "Stub resolver",
+                      "Does the legwork",
+                      "The . zone",
+                      `.${host.split(".").at(-1)} zone`,
+                      "The zone owner",
+                    ][i]
+                  }
+                </small>
+              </div>
+            ))}
+          </div>
+          <div className="dns-messages">
+            {trace.map((e, i) => (
+              <button
+                key={i}
+                onClick={() => setStep(i)}
+                className={`${i === step ? "active" : ""} ${i > step ? "future" : ""}`}
+              >
+                <span className="dns-message-number">{i + 1}</span>
+                <span className="dns-message-route">
+                  {e.from}
+                  <ArrowRight size={14} />
+                  {e.to}
+                </span>
+                <code>{e.text}</code>
+                {i < step ? <Check size={15} /> : <ChevronRight size={15} />}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="lab-toolbar">
+          <button className="secondary-button" onClick={() => setStep(0)}>
+            <RotateCcw size={14} />
+            Reset
+          </button>
+          <span>
+            Exchange {step + 1} of {trace.length}
+          </span>
+          <button
+            className="primary-button"
+            disabled={step === trace.length - 1}
+            onClick={() => setStep((s) => s + 1)}
+          >
+            Next exchange <ArrowRight size={15} />
+          </button>
+        </div>
+      </section>
+      <div className="two-column">
+        <section className="panel text-panel">
+          <Tag>{cache ? "CACHE HIT" : "CACHE MISS"}</Tag>
+          <h2>{event.text}</h2>
+          <p>{event.detail}</p>
+          <Note>
+            The recursive resolver makes the iterative queries. Your browser
+            does not contact every root, TLD, and authoritative server itself.
+          </Note>
+        </section>
+        <TerminalBox title="DNS RESPONSE · ILLUSTRATIVE">{`; ${host} IN A\n;; flags: qr rd ra; status: NOERROR\n;; ANSWER SECTION:\n${host}.  ${cache ? "240" : "300"}  IN  A  203.0.113.80\n\n; TTL is time to keep a record,\n; not the IP packet hop limit.`}</TerminalBox>
+      </div>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "Recursion, delegation, and glue",
+              "RD requests recursive service; RA indicates that the server supports it. Referrals carry NS records. In-bailiwick nameservers can require glue to avoid circular resolution dependencies. An authoritative answer sets AA.",
+            ],
+            [
+              "Caching, negatives, and aliases",
+              "Positive records expire by TTL. NXDOMAIN and NODATA can also be cached according to the zone’s SOA information. A CNAME points to another name; the resolver follows it, with loop protection. Cache state at each resolver can shorten this illustrated path.",
+            ],
+            [
+              "Transport and validation",
+              "UDP/53 is common; truncation (TC) can trigger TCP retry. EDNS supports larger DNS messages. DoT and DoH protect the client-to-resolver transport. DNSSEC verifies signatures along a trust chain; it does not hide the question.",
+            ],
+            [
+              "IPv6 and service discovery",
+              "AAAA supplies IPv6 addresses. HTTPS/SVCB records can advertise service parameters. Dual-stack clients may use Happy Eyeballs to race viable address families; the first DNS response alone does not dictate the winner.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
 }
 
-function TcpLab({engineer}:{engineer:boolean}){
- const [tab,setTab]=useState('Handshake'),[stage,setStage]=useState(0),[lost,setLost]=useState(2),[sent,setSent]=useState(false),[repaired,setRepaired]=useState(false),[congestion,setCongestion]=useState({cwnd:1,threshold:16,history:[1],phase:'Slow start'}),[rwnd,setRwnd]=useState(12);
- const states=[['CLOSED','LISTEN'],['SYN-SENT','LISTEN'],['SYN-SENT','SYN-RECEIVED'],['ESTABLISHED','SYN-RECEIVED'],['ESTABLISHED','ESTABLISHED']];
- const lines=[['SYN','Seq=1000','right'],['SYN + ACK','Seq=9000 · Ack=1001','left'],['ACK','Seq=1001 · Ack=9001','right']];
- const cwnd=congestion.cwnd;
- return <><section className="panel"><Tabs items={['Handshake','Reliable delivery','Flow & congestion','Socket lifecycle']} value={tab} onChange={setTab}/>{tab==='Handshake'?<><div className="sequence-diagram"><div className="sequence-endpoint left"><Monitor size={28}/><h3>Client kernel</h3><code>192.168.1.20:51514</code><Tag>{states[stage][0]}</Tag></div><div className="sequence-endpoint right"><Server size={28}/><h3>Server kernel</h3><code>203.0.113.80:443</code><Tag color="blue">{states[stage][1]}</Tag></div><div className="sequence-lifeline left"/><div className="sequence-lifeline right"/>{lines.map(([flag,detail,dir],i)=><div key={flag} className={`sequence-message ${dir} ${stage>i?'visible':''}`} style={{top:165+i*72}}><span><b>{flag}</b><code>{detail}</code></span><div>{dir==='left'?<ArrowLeft/>:<ArrowRight/>}</div></div>)}</div><div className="lab-toolbar"><button className="secondary-button" onClick={()=>setStage(0)}><RotateCcw size={14}/>Reset</button><span>{['A listener exists; no connection yet.','Client sends SYN.','Server receives SYN and sends SYN-ACK.','Client receives SYN-ACK and sends ACK.','Server receives ACK. Both endpoints established.'][stage]}</span><button className="primary-button" onClick={()=>setStage(s=>Math.min(s+1,4))} disabled={stage===4}>Advance <ArrowRight size={15}/></button></div></>:tab==='Reliable delivery'?<div className="lab-interior"><div className="section-heading"><div><h2>A byte stream survives a lost segment.</h2><p>Select a segment to drop, then send all six. Each carries 1,000 bytes.</p></div><Tag color="purple">SACK ENABLED</Tag></div><div className="segment-train">{Array.from({length:6},(_,i)=><button key={i} disabled={sent} onClick={()=>setLost(i)} className={`${i===lost?'lost':''} ${sent&&(i!==lost||repaired)?'delivered':''}`}><span>{sent&&i===lost&&!repaired?<X size={23}/>:<BoxIcon/>}</span><b>Segment {i+1}</b><code>{1001+i*1000}–{2000+i*1000}</code><small>{sent?(i===lost&&!repaired?'DROPPED':'RECEIVED'):i===lost?'DROP THIS ONE':'SEND'}</small></button>)}</div><div className="receive-buffer"><span>APPLICATION RECEIVE BUFFER</span><div>{Array.from({length:6},(_,i)=><i key={i} className={sent&&(i!==lost||repaired)?'filled':''}>{sent&&(i!==lost||repaired)?i+1:'·'}</i>)}</div><p>{!sent?'Waiting for bytes.':repaired?'All bytes are contiguous. The application can read the full stream.':`Cumulative ACK = ${1001+lost*1000}. Later segments can be buffered, but bytes beyond the gap cannot be delivered in order.`}</p></div><div className="button-row"><button className="primary-button" disabled={sent} onClick={()=>setSent(true)}><Play size={14}/>Send segments</button><button className="secondary-button" disabled={!sent||repaired} onClick={()=>setRepaired(true)}>Retransmit missing segment</button><button className="icon-button" aria-label="Reset segment experiment" onClick={()=>{setSent(false);setRepaired(false)}}><RotateCcw size={18}/></button></div><Note>This experiment skips timer timing. Recovery can be triggered by loss detection or retransmission timeout. SACK tells the sender about received ranges beyond a gap.</Note></div>:tab==='Flow & congestion'?<div className="lab-interior"><div className="section-heading"><h2>Two limits. Different problems.</h2><Tag>{congestion.phase.toUpperCase()} · ssthresh {congestion.threshold}</Tag></div><div className="window-stats"><div><span>Congestion window · cwnd</span><b>{cwnd}<small> segments</small></b><p>Protects the network.</p></div><div><span>Receive window · rwnd</span><b>{rwnd}<small> segments</small></b><p>Protects the receiver.</p></div><div className="green-stat"><span>Maximum in flight</span><b>{Math.min(cwnd,rwnd)}<small> segments</small></b><p>Limited by the smaller window.</p></div></div><div className="congestion-chart">{congestion.history.map((v,i)=><div key={i} className={i===congestion.history.length-1?'current':''}><span style={{height:`${v/Math.max(...congestion.history,16)*145+8}px`}}/><small>{i}</small><b>{v}</b></div>)}</div><div className="controls-row"><label>Receiver capacity <input type="range" min="1" max="32" value={rwnd} onChange={e=>setRwnd(Number(e.target.value))}/></label><button className="secondary-button" onClick={()=>setCongestion(s=>congestionStep(s,'ack',rwnd))} disabled={congestion.history.length>=12}>ACK a window</button><button className="secondary-button" onClick={()=>setCongestion(s=>congestionStep(s,'loss',rwnd))} disabled={congestion.history.length>=12||Math.min(cwnd,rwnd)<4}>Recover from loss</button><button className="icon-button" aria-label="Reset congestion model" onClick={()=>setCongestion({cwnd:1,threshold:16,history:[1],phase:'Slow start'})}><RotateCcw size={17}/></button></div><Note>This teaching model starts at 1 MSS and acknowledges one full available window per step. Slow start grows with acknowledged bytes; after the threshold, growth is additive. “Recover from loss” shows a Reno-style result after fast recovery, halving the flight-based threshold. It omits temporary window inflation. Timeout recovery, CUBIC, and BBR differ.</Note></div>:<div className="lab-interior"><div className="socket-grid"><TerminalBox title="CLIENT · OS API (PSEUDOCODE)">{`fd = socket(AF_INET, SOCK_STREAM)\n# Kernel endpoint, initially unconnected\n\nconnect(fd, server_ip, 443)\n# Bind local ephemeral port; handshake\n\nsend(fd, tls_record_bytes)\n# Copy / queue bytes in send buffer\n\nrecv(fd, buffer)\n# Read in-order bytes from receive buffer\n\nclose(fd)\n# Graceful close after queued bytes`}</TerminalBox><TerminalBox title="SERVER · OS API (PSEUDOCODE)">{`listener = socket(AF_INET, SOCK_STREAM)\nbind(listener, 0.0.0.0, 443)\nlisten(listener, backlog)\n\nclient_fd = accept(listener)\n# New connected socket; listener stays\n# ready to accept other connections.\n\nrecv(client_fd, buffer)\nsend(client_fd, response_bytes)\nclose(client_fd)`}</TerminalBox></div><div className="socket-state"><h3>What the kernel remembers</h3><div>{['Local / remote IP + port','SND.UNA · oldest unacknowledged','SND.NXT · next byte to send','RCV.NXT · next byte expected','Send + receive buffers','Retransmission timers','cwnd + advertised rwnd','Connection state'].map(x=><code key={x}>{x}</code>)}</div></div><Note>The four-tuple distinguishes established TCP conversations within a network context. A listening socket is matched differently. A connected UDP socket only records a default peer and filtering behavior; it does not run a TCP handshake.</Note></div>}</section>
- {engineer&&<DeepDetails items={[
- ['The sequence space','Sequence numbers count bytes, not packets. SYN and FIN each consume one sequence number; a pure ACK consumes none. The next expected byte is the cumulative acknowledgment. Sequence arithmetic wraps modulo 2³².'],
- ['MSS, segmentation, and PMTU','MSS describes the maximum TCP payload a peer will accept in a segment. For a 1,500-byte IPv4 path MTU and minimum 20-byte IP + 20-byte TCP headers, 1,460 bytes remain. Options and tunnels reduce usable payload. PMTUD relies on ICMP; filtering it can cause a black hole.'],
- ['Closing and TIME-WAIT','An active close typically passes through FIN-WAIT-1, FIN-WAIT-2, and TIME-WAIT; the passive side uses CLOSE-WAIT and LAST-ACK. Both directions close independently. TIME-WAIT handles delayed duplicates and retransmission of the final ACK. RST aborts a connection.'],
- ['Route changes and idle sockets','TCP state lives at the endpoints. A route change can preserve the connection if addresses and reachability remain valid. NAT expiration, endpoint failure, resets, or sustained loss can break it. An idle established socket does not by itself prove the peer is still reachable.']
- ]}/>}</>
+function TcpLab({ engineer }: { engineer: boolean }) {
+  const [tab, setTab] = useState("Handshake"),
+    [stage, setStage] = useState(0),
+    [lost, setLost] = useState(2),
+    [sent, setSent] = useState(false),
+    [repaired, setRepaired] = useState(false),
+    [congestion, setCongestion] = useState({
+      cwnd: 1,
+      threshold: 16,
+      history: [1],
+      phase: "Slow start",
+    }),
+    [rwnd, setRwnd] = useState(12);
+  const states = [
+    ["CLOSED", "LISTEN"],
+    ["SYN-SENT", "LISTEN"],
+    ["SYN-SENT", "SYN-RECEIVED"],
+    ["ESTABLISHED", "SYN-RECEIVED"],
+    ["ESTABLISHED", "ESTABLISHED"],
+  ];
+  const lines = [
+    ["SYN", "Seq=1000", "right"],
+    ["SYN + ACK", "Seq=9000 · Ack=1001", "left"],
+    ["ACK", "Seq=1001 · Ack=9001", "right"],
+  ];
+  const cwnd = congestion.cwnd;
+  return (
+    <>
+      <section className="panel">
+        <Tabs
+          items={[
+            "Handshake",
+            "Reliable delivery",
+            "Flow & congestion",
+            "Socket lifecycle",
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+        {tab === "Handshake" ? (
+          <>
+            <div className="sequence-diagram">
+              <div className="sequence-endpoint left">
+                <Monitor size={28} />
+                <h3>Client kernel</h3>
+                <code>192.168.1.20:51514</code>
+                <Tag>{states[stage][0]}</Tag>
+              </div>
+              <div className="sequence-endpoint right">
+                <Server size={28} />
+                <h3>Server kernel</h3>
+                <code>203.0.113.80:443</code>
+                <Tag color="blue">{states[stage][1]}</Tag>
+              </div>
+              <div className="sequence-lifeline left" />
+              <div className="sequence-lifeline right" />
+              {lines.map(([flag, detail, dir], i) => (
+                <div
+                  key={flag}
+                  className={`sequence-message ${dir} ${stage > i ? "visible" : ""}`}
+                  style={{ top: 165 + i * 72 }}
+                >
+                  <span>
+                    <b>{flag}</b>
+                    <code>{detail}</code>
+                  </span>
+                  <div>{dir === "left" ? <ArrowLeft /> : <ArrowRight />}</div>
+                </div>
+              ))}
+            </div>
+            <div className="lab-toolbar">
+              <button className="secondary-button" onClick={() => setStage(0)}>
+                <RotateCcw size={14} />
+                Reset
+              </button>
+              <span>
+                {
+                  [
+                    "A listener exists; no connection yet.",
+                    "Client sends SYN.",
+                    "Server receives SYN and sends SYN-ACK.",
+                    "Client receives SYN-ACK and sends ACK.",
+                    "Server receives ACK. Both endpoints established.",
+                  ][stage]
+                }
+              </span>
+              <button
+                className="primary-button"
+                onClick={() => setStage((s) => Math.min(s + 1, 4))}
+                disabled={stage === 4}
+              >
+                Advance <ArrowRight size={15} />
+              </button>
+            </div>
+          </>
+        ) : tab === "Reliable delivery" ? (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <div>
+                <h2>A byte stream survives a lost segment.</h2>
+                <p>
+                  Select a segment to drop, then send all six. Each carries
+                  1,000 bytes.
+                </p>
+              </div>
+              <Tag color="purple">SACK ENABLED</Tag>
+            </div>
+            <div className="segment-train">
+              {Array.from({ length: 6 }, (_, i) => (
+                <button
+                  key={i}
+                  disabled={sent}
+                  onClick={() => setLost(i)}
+                  className={`${i === lost ? "lost" : ""} ${sent && (i !== lost || repaired) ? "delivered" : ""}`}
+                >
+                  <span>
+                    {sent && i === lost && !repaired ? (
+                      <X size={23} />
+                    ) : (
+                      <BoxIcon />
+                    )}
+                  </span>
+                  <b>Segment {i + 1}</b>
+                  <code>
+                    {1001 + i * 1000}–{2000 + i * 1000}
+                  </code>
+                  <small>
+                    {sent
+                      ? i === lost && !repaired
+                        ? "DROPPED"
+                        : "RECEIVED"
+                      : i === lost
+                        ? "DROP THIS ONE"
+                        : "SEND"}
+                  </small>
+                </button>
+              ))}
+            </div>
+            <div className="receive-buffer">
+              <span>APPLICATION RECEIVE BUFFER</span>
+              <div>
+                {Array.from({ length: 6 }, (_, i) => (
+                  <i
+                    key={i}
+                    className={sent && (i !== lost || repaired) ? "filled" : ""}
+                  >
+                    {sent && (i !== lost || repaired) ? i + 1 : "·"}
+                  </i>
+                ))}
+              </div>
+              <p>
+                {!sent
+                  ? "Waiting for bytes."
+                  : repaired
+                    ? "All bytes are contiguous. The application can read the full stream."
+                    : `Cumulative ACK = ${1001 + lost * 1000}. Later segments can be buffered, but bytes beyond the gap cannot be delivered in order.`}
+              </p>
+            </div>
+            <div className="button-row">
+              <button
+                className="primary-button"
+                disabled={sent}
+                onClick={() => setSent(true)}
+              >
+                <Play size={14} />
+                Send segments
+              </button>
+              <button
+                className="secondary-button"
+                disabled={!sent || repaired}
+                onClick={() => setRepaired(true)}
+              >
+                Retransmit missing segment
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Reset segment experiment"
+                onClick={() => {
+                  setSent(false);
+                  setRepaired(false);
+                }}
+              >
+                <RotateCcw size={18} />
+              </button>
+            </div>
+            <Note>
+              This experiment skips timer timing. Recovery can be triggered by
+              loss detection or retransmission timeout. SACK tells the sender
+              about received ranges beyond a gap.
+            </Note>
+          </div>
+        ) : tab === "Flow & congestion" ? (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <h2>Two limits. Different problems.</h2>
+              <Tag>
+                {congestion.phase.toUpperCase()} · ssthresh{" "}
+                {congestion.threshold}
+              </Tag>
+            </div>
+            <div className="window-stats">
+              <div>
+                <span>Congestion window · cwnd</span>
+                <b>
+                  {cwnd}
+                  <small> segments</small>
+                </b>
+                <p>Protects the network.</p>
+              </div>
+              <div>
+                <span>Receive window · rwnd</span>
+                <b>
+                  {rwnd}
+                  <small> segments</small>
+                </b>
+                <p>Protects the receiver.</p>
+              </div>
+              <div className="green-stat">
+                <span>Maximum in flight</span>
+                <b>
+                  {Math.min(cwnd, rwnd)}
+                  <small> segments</small>
+                </b>
+                <p>Limited by the smaller window.</p>
+              </div>
+            </div>
+            <div className="congestion-chart">
+              {congestion.history.map((v, i) => (
+                <div
+                  key={i}
+                  className={
+                    i === congestion.history.length - 1 ? "current" : ""
+                  }
+                >
+                  <span
+                    style={{
+                      height: `${(v / Math.max(...congestion.history, 16)) * 145 + 8}px`,
+                    }}
+                  />
+                  <small>{i}</small>
+                  <b>{v}</b>
+                </div>
+              ))}
+            </div>
+            <div className="controls-row">
+              <label>
+                Receiver capacity{" "}
+                <input
+                  type="range"
+                  min="1"
+                  max="32"
+                  value={rwnd}
+                  onChange={(e) => setRwnd(Number(e.target.value))}
+                />
+              </label>
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  setCongestion((s) => congestionStep(s, "ack", rwnd))
+                }
+                disabled={congestion.history.length >= 12}
+              >
+                ACK a window
+              </button>
+              <button
+                className="secondary-button"
+                onClick={() =>
+                  setCongestion((s) => congestionStep(s, "loss", rwnd))
+                }
+                disabled={
+                  congestion.history.length >= 12 || Math.min(cwnd, rwnd) < 4
+                }
+              >
+                Recover from loss
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Reset congestion model"
+                onClick={() =>
+                  setCongestion({
+                    cwnd: 1,
+                    threshold: 16,
+                    history: [1],
+                    phase: "Slow start",
+                  })
+                }
+              >
+                <RotateCcw size={17} />
+              </button>
+            </div>
+            <Note>
+              This teaching model starts at 1 MSS and acknowledges one full
+              available window per step. Slow start grows with acknowledged
+              bytes; after the threshold, growth is additive. “Recover from
+              loss” shows a Reno-style result after fast recovery, halving the
+              flight-based threshold. It omits temporary window inflation.
+              Timeout recovery, CUBIC, and BBR differ.
+            </Note>
+          </div>
+        ) : (
+          <div className="lab-interior">
+            <div className="socket-grid">
+              <TerminalBox title="CLIENT · OS API (PSEUDOCODE)">{`fd = socket(AF_INET, SOCK_STREAM)\n# Kernel endpoint, initially unconnected\n\nconnect(fd, server_ip, 443)\n# Bind local ephemeral port; handshake\n\nsend(fd, tls_record_bytes)\n# Copy / queue bytes in send buffer\n\nrecv(fd, buffer)\n# Read in-order bytes from receive buffer\n\nclose(fd)\n# Graceful close after queued bytes`}</TerminalBox>
+              <TerminalBox title="SERVER · OS API (PSEUDOCODE)">{`listener = socket(AF_INET, SOCK_STREAM)\nbind(listener, 0.0.0.0, 443)\nlisten(listener, backlog)\n\nclient_fd = accept(listener)\n# New connected socket; listener stays\n# ready to accept other connections.\n\nrecv(client_fd, buffer)\nsend(client_fd, response_bytes)\nclose(client_fd)`}</TerminalBox>
+            </div>
+            <div className="socket-state">
+              <h3>What the kernel remembers</h3>
+              <div>
+                {[
+                  "Local / remote IP + port",
+                  "SND.UNA · oldest unacknowledged",
+                  "SND.NXT · next byte to send",
+                  "RCV.NXT · next byte expected",
+                  "Send + receive buffers",
+                  "Retransmission timers",
+                  "cwnd + advertised rwnd",
+                  "Connection state",
+                ].map((x) => (
+                  <code key={x}>{x}</code>
+                ))}
+              </div>
+            </div>
+            <Note>
+              The four-tuple distinguishes established TCP conversations within
+              a network context. A listening socket is matched differently. A
+              connected UDP socket only records a default peer and filtering
+              behavior; it does not run a TCP handshake.
+            </Note>
+          </div>
+        )}
+      </section>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "The sequence space",
+              "Sequence numbers count bytes, not packets. SYN and FIN each consume one sequence number; a pure ACK consumes none. The next expected byte is the cumulative acknowledgment. Sequence arithmetic wraps modulo 2³².",
+            ],
+            [
+              "MSS, segmentation, and PMTU",
+              "MSS describes the maximum TCP payload a peer will accept in a segment. For a 1,500-byte IPv4 path MTU and minimum 20-byte IP + 20-byte TCP headers, 1,460 bytes remain. Options and tunnels reduce usable payload. PMTUD relies on ICMP; filtering it can cause a black hole.",
+            ],
+            [
+              "Closing and TIME-WAIT",
+              "An active close typically passes through FIN-WAIT-1, FIN-WAIT-2, and TIME-WAIT; the passive side uses CLOSE-WAIT and LAST-ACK. Both directions close independently. TIME-WAIT handles delayed duplicates and retransmission of the final ACK. RST aborts a connection.",
+            ],
+            [
+              "Route changes and idle sockets",
+              "TCP state lives at the endpoints. A route change can preserve the connection if addresses and reachability remain valid. NAT expiration, endpoint failure, resets, or sustained loss can break it. An idle established socket does not by itself prove the peer is still reachable.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
 }
-function BoxIcon(){return <Layers3 size={24}/>}
-
-function RoutingLab({engineer}:{engineer:boolean}){
- const [tab,setTab]=useState('Forwarding table'),[dest,setDest]=useState('203.0.113.80'),[withdraw,setWithdraw]=useState(false),[pref,setPref]=useState(200),[failed,setFailed]=useState(false);
- const routes=[{prefix:'0.0.0.0/0',next:'192.0.2.1',iface:'uplink0',source:'Static',enabled:true},{prefix:'203.0.0.0/8',next:'192.0.2.2',iface:'transit0',source:'BGP',enabled:true},{prefix:'203.0.113.0/24',next:'192.0.2.3',iface:'peer0',source:'BGP',enabled:!withdraw},{prefix:'192.168.1.0/24',next:'On-link',iface:'lan0',source:'Connected',enabled:true}];
- const winner=longestPrefix(dest,routes);const valid=ipNumber(dest)!==null;
- return <><section className="panel"><Tabs items={['Forwarding table','BGP policy','Inside the ISP']} value={tab} onChange={setTab}/>{tab==='Forwarding table'?<div className="lab-interior"><div className="routing-controls"><label>PACKET DESTINATION<input className="mono-input" aria-label="Destination IPv4 address" value={dest} onChange={e=>setDest(e.target.value)}/></label><ArrowRight size={25}/><div className="route-result"><small>SELECTED NEXT HOP</small><b>{valid?winner?.next??'No route':'Invalid IPv4 address'}</b><span>{valid?winner?.prefix:'Use four octets from 0–255.'}</span></div><Toggle label="Withdraw /24 route" checked={withdraw} onChange={()=>setWithdraw(!withdraw)}/></div><div className="table-scroll"><table><thead><tr><th>Destination prefix</th><th>Next hop</th><th>Interface</th><th>Learned from</th><th>Decision</th></tr></thead><tbody>{routes.map(r=><tr key={r.prefix} className={`${winner===r?'winning':''} ${!r.enabled?'disabled-route':''}`}><td><code>{r.prefix}</code></td><td><code>{r.next}</code></td><td><code>{r.iface}</code></td><td>{r.source}</td><td>{!r.enabled?<Tag color="gray">Withdrawn</Tag>:winner===r?<Tag><Check size={11}/>Longest match</Tag>:prefixMatches(dest,r.prefix)?'Matches':'No match'}</td></tr>)}</tbody></table></div><div className="prefix-bits">{(valid?dest.split('.').map(n=>Number(n).toString(2).padStart(8,'0')).join('.'):''.padEnd(35,'·')).split('').map((n,i)=><span key={i} className={winner&&i-Math.floor(i/9)<Number(winner.prefix.split('/')[1])?'matched':''}>{n}</span>)}</div><Note>Longest-prefix match happens after routes have been installed. Protocol preference and BGP attributes help select routes for the same prefix; a less specific route does not beat an installed more specific match.</Note></div>:tab==='BGP policy'?<div className="lab-interior"><div className="section-heading"><h2>Policy can beat a shorter AS path.</h2><Tag color="blue">PREFIX 203.0.113.0/24</Tag></div><div className="bgp-paths">{[{name:'Customer path',as:'64510 → 64511 → 64502',local:pref},{name:'Transit path',as:'64520 → 64502',local:100}].map((p,i)=><div key={p.name} className={(pref>100?i===0:i===1)?'selected':''}><span>{(pref>100?i===0:i===1)?<CheckCircle2/>:<Route/>}</span><h3>{p.name}</h3><div className="as-path">{p.as.split(' → ').map((a,j)=><span key={a}>{j>0&&<ArrowRight size={14}/>}<code>AS {a}</code></span>)}</div><Facts items={[["LOCAL_PREF",String(p.local)],["AS_PATH length",String(i===0?3:2)],["NEXT_HOP",i===0?'192.0.2.10':'192.0.2.20']]}/></div>)}</div><label className="range-control">Customer local preference <b>{pref}</b><input aria-label="Customer local preference" type="range" min="50" max="250" step="50" value={pref} onChange={e=>setPref(Number(e.target.value))}/></label><p>{pref>100?'The longer customer path wins because its local preference is higher.':pref===100?'Preferences tie. The shorter transit AS path wins.':'The transit path wins on local preference.'}</p><Note>Assume both paths are valid, their next hops are reachable, and other preceding selection factors tie. BGP uses policy, not a global latency map. Export policy determines what neighbors learn.</Note></div>:<div className="lab-interior"><div className="section-heading"><h2>OSPF computes a path through the AS.</h2><Toggle checked={failed} onChange={()=>setFailed(!failed)} label="Fail link A–B"/></div><svg className="ospf-graph" viewBox="0 0 700 260" role="img" aria-label={failed?'A to C to D, cost 35':'A to B to C to D, cost 19'}>{[{x1:100,y1:130,x2:300,y2:45,c:'10',sel:!failed,down:failed},{x1:300,y1:45,x2:580,y2:130,c:'20',sel:false},{x1:100,y1:130,x2:300,y2:220,c:'30',sel:failed},{x1:300,y1:220,x2:580,y2:130,c:'5',sel:true},{x1:300,y1:45,x2:300,y2:220,c:'4',sel:!failed}].map((l,i)=><g key={i}><line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.down?'#dc806d':l.sel?'#267d5b':'#d3dad5'} strokeWidth={l.sel?4:2} strokeDasharray={l.down?'7 5':undefined}/><rect x={(l.x1+l.x2)/2-17} y={(l.y1+l.y2)/2-12} width="34" height="25" rx="8" fill="#fff"/><text x={(l.x1+l.x2)/2} y={(l.y1+l.y2)/2+5} textAnchor="middle">{l.down?'×':l.c}</text></g>)}{[{x:100,y:130,n:'A'},{x:300,y:45,n:'B'},{x:300,y:220,n:'C'},{x:580,y:130,n:'D'}].map(n=><g key={n.n}><circle cx={n.x} cy={n.y} r="23" fill="#e6efe8" stroke="#267d5b"/><text x={n.x} y={n.y+6} textAnchor="middle" fontWeight="600">{n.n}</text></g>)}</svg><div className="route-summary"><span>Shortest path from A to D</span><b>{failed?'A → C → D':'A → B → C → D'}</b><Tag>Total cost {failed?'35':'19'}</Tag></div><p>Hello packets discover neighbors. Adjacent routers exchange link-state information, build an LSDB for their area, and run SPF. A link failure causes updates and recalculation; forwarding changes after convergence.</p><Note>The diagram shows the converged outcome, not instantaneous failover. BGP can select an external next hop whose reachability is resolved through this internal routing system.</Note></div>}</section>{engineer&&<DeepDetails items={[
- ['RIB, FIB, and recursive next hops','The control plane gathers candidate routes in routing information bases. The best usable routes populate a forwarding information base, often programmed into hardware. A BGP next-hop address can require another route lookup to determine the outgoing interface and neighbor.'],
- ['BGP: policy, loops, and reachability','Higher LOCAL_PREF is preferred within an AS; shorter AS_PATH is a later comparison. A router normally rejects paths containing its own ASN. eBGP exchanges routes between ASes; iBGP distributes them internally, often using route reflectors. MED and additional tie-breaks depend on selection rules and policy.'],
- ['OSPF: areas, DRs, and summarization','Area 0 is the backbone. ABRs connect areas and can summarize routes. Within a broadcast network, DR/BDR election reduces full adjacency count. Neighbor timers, area, authentication, and network parameters must be compatible. SPF uses configured additive interface costs, not physical distance.'],
- ['ECMP, MPLS, and TTL','Equal-cost routes may install multiple next hops. A flow hash often keeps a conversation on one path. MPLS cores can forward using labels; label distribution and IP routing cooperate. IPv4 TTL and IPv6 Hop Limit prevent indefinite looping. A traceroute uses expiry responses to infer part of a path.']
- ]}/>}</>
+function BoxIcon() {
+  return <Layers3 size={24} />;
 }
 
-function TlsLab({host,path,engineer}:{host:string,path:string,engineer:boolean}){
- const [tab,setTab]=useState('Secure the connection'),[protocol,setProtocol]=useState('HTTP/2'),[invalid,setInvalid]=useState(false),[render,setRender]=useState(0),[envelope,setEnvelope]=useState(0);
- const pipeline=['HTML & CSS','DOM + CSSOM','Style & layout','Paint','Composite'];
- return <><section className="panel"><Tabs items={['Secure the connection','The HTTP request','Render the page']} value={tab} onChange={setTab}/>{tab==='Secure the connection'?<div className="lab-interior"><div className="section-heading"><div className="segmented"><button className={protocol==='HTTP/2'?'active':''} onClick={()=>setProtocol('HTTP/2')}>HTTP/2 over TCP</button><button className={protocol==='HTTP/3'?'active':''} onClick={()=>setProtocol('HTTP/3')}>HTTP/3 over QUIC</button></div><Toggle label="Wrong certificate hostname" checked={invalid} onChange={()=>setInvalid(!invalid)}/></div><div className="tls-flow">{[protocol==='HTTP/2'?'TCP handshake':'QUIC Initial','ClientHello + key share','ServerHello + certificate',invalid?'Identity check fails':'Verify identity + Finished',invalid?'Navigation blocked':'Encrypted HTTP streams'].map((s,i)=><div key={s} className={`${invalid&&i>=3?'failed':''} ${i===4&&!invalid?'success':''}`}><span>{invalid&&i>=3?<X/>:i===4?<LockKeyhole/>:i===0?<Network/>:<ShieldCheck/>}</span><b>{s}</b><small>{['Transport setup','SNI · ALPN · supported groups','Key agreement · authentication',invalid?'Hostname mismatch':'Trust chain · signature · hostname',invalid?'No request sent':'AEAD-protected application data'][i]}</small>{i<4&&<ArrowRight className="flow-arrow" size={17}/>}</div>)}</div><div className={`tls-verdict ${invalid?'failed':''}`}><ShieldCheck size={27}/><div><h3>{invalid?'The browser must reject the identity.':'The server is authenticated. Traffic keys are ready.'}</h3><p>{invalid?`A valid certificate for another hostname does not authenticate ${host}. Encryption alone is insufficient.`:protocol==='HTTP/2'?'TLS records protect HTTP/2 frames carried by the TCP byte stream.':'QUIC carries the TLS 1.3 handshake and protects transport packets over UDP. There is no TCP handshake.'}</p></div></div><Note>A certificate contains a public key and a signed identity binding. Session traffic uses derived symmetric keys. Fresh TLS 1.3 normally needs one round trip after TCP; resumption and 0-RTT have different behavior and replay considerations.</Note></div>:tab==='The HTTP request'?<div className="lab-interior"><div className="two-column"><TerminalBox title="HTTP/2 · DECODED PSEUDO-HEADERS">{`:method: GET\n:scheme: https\n:authority: ${host}\n:path: ${path}\n\naccept: text/html\n\n# Response\n:status: 200\ncontent-type: text/html\ncache-control: public, max-age=300`}</TerminalBox><div className="envelope-demo"><span className="eyebrow">CLICK AN ENVELOPE</span>{['Ethernet frame','IPv4 packet','TCP segment','TLS record','HTTP/2 frames'].map((s,i)=><button key={s} className={envelope===i?'selected':''} style={{marginLeft:i*14}} onClick={()=>setEnvelope(i)}><span>{s}</span><code>{['Next-hop MAC · FCS','Source / destination · TTL','Ports · Seq · Ack','Encrypted and authenticated','HEADERS · DATA · stream ID'][i]}</code></button>)}</div></div><p className="envelope-explanation">{['An Ethernet frame delivers across one link. A router removes it and builds the appropriate envelope for the next link.','The destination address guides routing. Routers do not need the HTTP hostname to forward this IP packet.','TCP delivers an ordered byte stream. It does not preserve the boundaries between HTTP frames or TLS records.','TLS records can span segments; several records may also share a segment. Observers cannot read the HTTP fields from the ciphertext.','HTTP/2 multiplexes streams in binary frames and compresses headers with HPACK. This decoded view is for humans, not the wire format.'][envelope]}</p><Note>These are logical layers, not a one-to-one packing rule. In HTTP/3, HTTP frames ride QUIC streams over UDP, and QPACK replaces HPACK. HTTP/2 stream multiplexing still shares TCP’s transport-level head-of-line blocking.</Note></div>:<div className="lab-interior"><div className="render-stages">{pipeline.map((p,i)=><button className={render===i?'active':''} key={p} onClick={()=>setRender(i)}><span>{i+1}</span>{p}<ChevronRight size={15}/></button>)}</div><div className="render-demo"><div className="mini-browser"><div className="browser-chrome"><i/><i/><i/><span>Teaching document · local example</span></div><div className={`render-output render-${render}`}>{render===0?<pre>{`<main>\n  <h1>Hello, internet.</h1>\n  <p>One request. Many layers.</p>\n  <button>Explore</button>\n</main>`}</pre>:render===1?<div className="dom-tree"><code>document</code><ArrowDown/><code>main</code><div><code>h1</code><code>p</code><code>button</code></div></div>:<div className="rendered-teaching"><span>DELIVERED, BYTE BY BYTE</span><h2>Hello,<br/>internet.</h2><p>One request. Many layers.</p><span className="fake-button">Explore <ArrowUpRight size={14}/></span><div className="render-orbit"/></div>}</div></div><div className="render-description"><Tag>STAGE {render+1}</Tag><h2>{pipeline[render]}</h2><p>{['The response body contains source bytes. Content decoding and character decoding turn them into text for the HTML parser.','HTML tokens build a DOM tree. Stylesheets are parsed into CSS rules. Scripts can inspect or mutate the DOM.','The browser resolves matching CSS rules and computes styles, then calculates positions and sizes. A box model becomes geometry.','Paint records draw operations such as text, backgrounds, and borders. Rasterization turns those operations into pixels in tiles.','The compositor assembles rasterized layers into the final frame. Some transforms and opacity animations can update without a new layout.'][render]}</p><button className="primary-button" onClick={()=>setRender(r=>(r+1)%5)}>{render===4?'Replay':'Next stage'}<ArrowRight size={15}/></button></div></div></div>}</section>{engineer&&<DeepDetails items={[
- ['TLS visibility boundaries','HTTPS hides HTTP paths, headers, and bodies from passive network observers, while IP addresses, timing, and volume remain observable. Traditional SNI exposes a name in ClientHello; ECH can protect it when supported. The TLS-terminating CDN can see the plaintext request.'],
- ['HTTP caches, CDNs, and origins','An edge cache keys requests using selected request properties. Cache-Control governs reuse; ETag and If-None-Match enable revalidation and 304 responses. A miss may fetch an origin. DNS, anycast, and load balancing influence endpoint selection, but use separate mechanisms.'],
- ['Critical rendering path','A preload scanner can discover resources ahead of the parser. Stylesheets may block rendering; classic scripts can block HTML parsing. defer and async change execution timing. Fetches, parsing, script execution, style, layout, paint, and compositing overlap rather than forming one perfectly serial pipeline.']
- ]}/>}</>
+function RoutingLab({ engineer }: { engineer: boolean }) {
+  const [tab, setTab] = useState("Forwarding table"),
+    [dest, setDest] = useState("203.0.113.80"),
+    [withdraw, setWithdraw] = useState(false),
+    [pref, setPref] = useState(200),
+    [failed, setFailed] = useState(false);
+  const routes = [
+    {
+      prefix: "0.0.0.0/0",
+      next: "192.0.2.1",
+      iface: "uplink0",
+      source: "Static",
+      enabled: true,
+    },
+    {
+      prefix: "203.0.0.0/8",
+      next: "192.0.2.2",
+      iface: "transit0",
+      source: "BGP",
+      enabled: true,
+    },
+    {
+      prefix: "203.0.113.0/24",
+      next: "192.0.2.3",
+      iface: "peer0",
+      source: "BGP",
+      enabled: !withdraw,
+    },
+    {
+      prefix: "192.168.1.0/24",
+      next: "On-link",
+      iface: "lan0",
+      source: "Connected",
+      enabled: true,
+    },
+  ];
+  const winner = longestPrefix(dest, routes);
+  const valid = ipNumber(dest) !== null;
+  return (
+    <>
+      <section className="panel">
+        <Tabs
+          items={["Forwarding table", "BGP policy", "Inside the ISP"]}
+          value={tab}
+          onChange={setTab}
+        />
+        {tab === "Forwarding table" ? (
+          <div className="lab-interior">
+            <div className="routing-controls">
+              <label>
+                PACKET DESTINATION
+                <input
+                  className="mono-input"
+                  aria-label="Destination IPv4 address"
+                  value={dest}
+                  onChange={(e) => setDest(e.target.value)}
+                />
+              </label>
+              <ArrowRight size={25} />
+              <div className="route-result">
+                <small>SELECTED NEXT HOP</small>
+                <b>
+                  {valid
+                    ? (winner?.next ?? "No route")
+                    : "Invalid IPv4 address"}
+                </b>
+                <span>
+                  {valid ? winner?.prefix : "Use four octets from 0–255."}
+                </span>
+              </div>
+              <Toggle
+                label="Withdraw /24 route"
+                checked={withdraw}
+                onChange={() => setWithdraw(!withdraw)}
+              />
+            </div>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Destination prefix</th>
+                    <th>Next hop</th>
+                    <th>Interface</th>
+                    <th>Learned from</th>
+                    <th>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {routes.map((r) => (
+                    <tr
+                      key={r.prefix}
+                      className={`${winner === r ? "winning" : ""} ${!r.enabled ? "disabled-route" : ""}`}
+                    >
+                      <td>
+                        <code>{r.prefix}</code>
+                      </td>
+                      <td>
+                        <code>{r.next}</code>
+                      </td>
+                      <td>
+                        <code>{r.iface}</code>
+                      </td>
+                      <td>{r.source}</td>
+                      <td>
+                        {!r.enabled ? (
+                          <Tag color="gray">Withdrawn</Tag>
+                        ) : winner === r ? (
+                          <Tag>
+                            <Check size={11} />
+                            Longest match
+                          </Tag>
+                        ) : prefixMatches(dest, r.prefix) ? (
+                          "Matches"
+                        ) : (
+                          "No match"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="prefix-bits">
+              {(valid
+                ? dest
+                    .split(".")
+                    .map((n) => Number(n).toString(2).padStart(8, "0"))
+                    .join(".")
+                : "".padEnd(35, "·")
+              )
+                .split("")
+                .map((n, i) => (
+                  <span
+                    key={i}
+                    className={
+                      winner &&
+                      i - Math.floor(i / 9) <
+                        Number(winner.prefix.split("/")[1])
+                        ? "matched"
+                        : ""
+                    }
+                  >
+                    {n}
+                  </span>
+                ))}
+            </div>
+            <Note>
+              Longest-prefix match happens after routes have been installed.
+              Protocol preference and BGP attributes help select routes for the
+              same prefix; a less specific route does not beat an installed more
+              specific match.
+            </Note>
+          </div>
+        ) : tab === "BGP policy" ? (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <h2>Policy can beat a shorter AS path.</h2>
+              <Tag color="blue">PREFIX 203.0.113.0/24</Tag>
+            </div>
+            <div className="bgp-paths">
+              {[
+                {
+                  name: "Customer path",
+                  as: "64510 → 64511 → 64502",
+                  local: pref,
+                },
+                { name: "Transit path", as: "64520 → 64502", local: 100 },
+              ].map((p, i) => (
+                <div
+                  key={p.name}
+                  className={(pref > 100 ? i === 0 : i === 1) ? "selected" : ""}
+                >
+                  <span>
+                    {(pref > 100 ? i === 0 : i === 1) ? (
+                      <CheckCircle2 />
+                    ) : (
+                      <Route />
+                    )}
+                  </span>
+                  <h3>{p.name}</h3>
+                  <div className="as-path">
+                    {p.as.split(" → ").map((a, j) => (
+                      <span key={a}>
+                        {j > 0 && <ArrowRight size={14} />}
+                        <code>AS {a}</code>
+                      </span>
+                    ))}
+                  </div>
+                  <Facts
+                    items={[
+                      ["LOCAL_PREF", String(p.local)],
+                      ["AS_PATH length", String(i === 0 ? 3 : 2)],
+                      ["NEXT_HOP", i === 0 ? "192.0.2.10" : "192.0.2.20"],
+                    ]}
+                  />
+                </div>
+              ))}
+            </div>
+            <label className="range-control">
+              Customer local preference <b>{pref}</b>
+              <input
+                aria-label="Customer local preference"
+                type="range"
+                min="50"
+                max="250"
+                step="50"
+                value={pref}
+                onChange={(e) => setPref(Number(e.target.value))}
+              />
+            </label>
+            <p>
+              {pref > 100
+                ? "The longer customer path wins because its local preference is higher."
+                : pref === 100
+                  ? "Preferences tie. The shorter transit AS path wins."
+                  : "The transit path wins on local preference."}
+            </p>
+            <Note>
+              Assume both paths are valid, their next hops are reachable, and
+              other preceding selection factors tie. BGP uses policy, not a
+              global latency map. Export policy determines what neighbors learn.
+            </Note>
+          </div>
+        ) : (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <h2>OSPF computes a path through the AS.</h2>
+              <Toggle
+                checked={failed}
+                onChange={() => setFailed(!failed)}
+                label="Fail link A–B"
+              />
+            </div>
+            <svg
+              className="ospf-graph"
+              viewBox="0 0 700 260"
+              role="img"
+              aria-label={
+                failed ? "A to C to D, cost 35" : "A to B to C to D, cost 19"
+              }
+            >
+              {[
+                {
+                  x1: 100,
+                  y1: 130,
+                  x2: 300,
+                  y2: 45,
+                  c: "10",
+                  sel: !failed,
+                  down: failed,
+                },
+                { x1: 300, y1: 45, x2: 580, y2: 130, c: "20", sel: false },
+                { x1: 100, y1: 130, x2: 300, y2: 220, c: "30", sel: failed },
+                { x1: 300, y1: 220, x2: 580, y2: 130, c: "5", sel: true },
+                { x1: 300, y1: 45, x2: 300, y2: 220, c: "4", sel: !failed },
+              ].map((l, i) => (
+                <g key={i}>
+                  <line
+                    x1={l.x1}
+                    y1={l.y1}
+                    x2={l.x2}
+                    y2={l.y2}
+                    stroke={l.down ? "#dc806d" : l.sel ? "#267d5b" : "#d3dad5"}
+                    strokeWidth={l.sel ? 4 : 2}
+                    strokeDasharray={l.down ? "7 5" : undefined}
+                  />
+                  <rect
+                    x={(l.x1 + l.x2) / 2 - 17}
+                    y={(l.y1 + l.y2) / 2 - 12}
+                    width="34"
+                    height="25"
+                    rx="8"
+                    fill="#fff"
+                  />
+                  <text
+                    x={(l.x1 + l.x2) / 2}
+                    y={(l.y1 + l.y2) / 2 + 5}
+                    textAnchor="middle"
+                  >
+                    {l.down ? "×" : l.c}
+                  </text>
+                </g>
+              ))}
+              {[
+                { x: 100, y: 130, n: "A" },
+                { x: 300, y: 45, n: "B" },
+                { x: 300, y: 220, n: "C" },
+                { x: 580, y: 130, n: "D" },
+              ].map((n) => (
+                <g key={n.n}>
+                  <circle
+                    cx={n.x}
+                    cy={n.y}
+                    r="23"
+                    fill="#e6efe8"
+                    stroke="#267d5b"
+                  />
+                  <text
+                    x={n.x}
+                    y={n.y + 6}
+                    textAnchor="middle"
+                    fontWeight="600"
+                  >
+                    {n.n}
+                  </text>
+                </g>
+              ))}
+            </svg>
+            <div className="route-summary">
+              <span>Shortest path from A to D</span>
+              <b>{failed ? "A → C → D" : "A → B → C → D"}</b>
+              <Tag>Total cost {failed ? "35" : "19"}</Tag>
+            </div>
+            <p>
+              Hello packets discover neighbors. Adjacent routers exchange
+              link-state information, build an LSDB for their area, and run SPF.
+              A link failure causes updates and recalculation; forwarding
+              changes after convergence.
+            </p>
+            <Note>
+              The diagram shows the converged outcome, not instantaneous
+              failover. BGP can select an external next hop whose reachability
+              is resolved through this internal routing system.
+            </Note>
+          </div>
+        )}
+      </section>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "RIB, FIB, and recursive next hops",
+              "The control plane gathers candidate routes in routing information bases. The best usable routes populate a forwarding information base, often programmed into hardware. A BGP next-hop address can require another route lookup to determine the outgoing interface and neighbor.",
+            ],
+            [
+              "BGP: policy, loops, and reachability",
+              "Higher LOCAL_PREF is preferred within an AS; shorter AS_PATH is a later comparison. A router normally rejects paths containing its own ASN. eBGP exchanges routes between ASes; iBGP distributes them internally, often using route reflectors. MED and additional tie-breaks depend on selection rules and policy.",
+            ],
+            [
+              "OSPF: areas, DRs, and summarization",
+              "Area 0 is the backbone. ABRs connect areas and can summarize routes. Within a broadcast network, DR/BDR election reduces full adjacency count. Neighbor timers, area, authentication, and network parameters must be compatible. SPF uses configured additive interface costs, not physical distance.",
+            ],
+            [
+              "ECMP, MPLS, and TTL",
+              "Equal-cost routes may install multiple next hops. A flow hash often keeps a conversation on one path. MPLS cores can forward using labels; label distribution and IP routing cooperate. IPv4 TTL and IPv6 Hop Limit prevent indefinite looping. A traceroute uses expiry responses to infer part of a path.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
 }
 
-function VpnLab({engineer}:{engineer:boolean}){
- const [mode,setMode]=useState('Full tunnel'),[destination,setDestination]=useState('Public website'),[observer,setObserver]=useState('ISP'),[ipv6,setIpv6]=useState(false),[dnsLeak,setDnsLeak]=useState(false);
- const tunnel=mode==='Full tunnel'||(mode==='Split tunnel'&&destination==='Private service');const privateTarget=destination==='Private service';const dest=privateTarget?'10.20.0.80':'203.0.113.80';
- return <><section className="panel"><LabHeader title="Change the path"><div className="segmented">{['No VPN','Full tunnel','Split tunnel'].map(m=><button className={mode===m?'active':''} onClick={()=>setMode(m)} key={m}>{m}</button>)}</div></LabHeader><div className="lab-interior"><div className="section-heading"><label className="select-label">Destination <select value={destination} onChange={e=>setDestination(e.target.value)}><option>Public website</option><option>Private service</option></select></label><Tag color={tunnel?'purple':'gray'}>{tunnel?'ROUTED THROUGH TUNNEL':'DIRECT ROUTE'}</Tag></div><div className={`vpn-diagram ${tunnel?'tunneled':''}`}><div><Monitor/><b>Your device</b><code>{tunnel?'10.8.0.2':'192.168.1.20'}</code></div><div className="vpn-path"><span>{tunnel?<LockKeyhole size={18}/>:<ArrowRight size={20}/>}</span><small>{tunnel?'Encrypted outer tunnel':'Ordinary IP forwarding'}</small></div><div><Globe2/><b>Your ISP</b><code>Forwards outer IP</code></div><div className="vpn-path"><span>{tunnel?<LockKeyhole size={18}/>:<ArrowRight size={20}/>}</span></div>{tunnel&&<><div className="vpn-endpoint"><ShieldCheck/><b>VPN endpoint</b><code>192.0.2.10</code></div><div className="vpn-path"><ArrowRight size={20}/></div></>}<div><Server/><b>{privateTarget?'Private server':'Website'}</b><code>{dest}</code></div></div>{privateTarget&&!tunnel&&<div className="error-banner">No private route in this scenario. The public internet does not carry this private destination to your organization.</div>}<div className="two-column"><div className="nested-packet"><span className="eyebrow">ON YOUR ISP LINK · AFTER HOME NAT</span>{tunnel?<div className="outer-packet"><b>Outer IP + UDP</b><code>198.51.100.24 → 192.0.2.10</code><div className="encrypted-packet"><LockKeyhole size={17}/><b>WireGuard encrypted payload</b><div><code>Inner IP: 10.8.0.2 → {dest}</code><code>TCP → TLS → HTTP</code></div></div></div>:<div className="outer-packet direct"><b>IP packet</b><code>198.51.100.24 → {dest}</code><div className="encrypted-packet"><b>TCP → TLS → HTTP</b><small>HTTPS still encrypts application data.</small></div></div>}</div><div className="observer-card"><span className="eyebrow">LOOK THROUGH THEIR EYES</span><Tabs items={['ISP','VPN provider','Website']} value={observer} onChange={setObserver}/><h3>{observer} can observe…</h3><p>{observer==='ISP'?(tunnel?`The VPN server address, timing, volume, and outer UDP traffic.${dnsLeak?' DNS sent outside the tunnel can additionally reveal query names.':' The inner website address is hidden by the tunnel.'}`:'The destination IP and traffic metadata. HTTPS protects content; ordinary DNS and non-ECH SNI may reveal the hostname.'):observer==='VPN provider'?(tunnel?'Your incoming public IP and decrypted inner destination. It may see DNS and non-ECH SNI. HTTPS application content remains encrypted until its TLS endpoint.':'This traffic never traverses the VPN provider in the selected mode.'):(tunnel?'The VPN exit IP (assuming exit NAT), and the HTTP request after TLS termination. Accounts and cookies can still identify you.':'Your public egress IP, and HTTP request data after terminating TLS.')}</p><Toggle checked={dnsLeak} onChange={()=>setDnsLeak(!dnsLeak)} label="Send DNS outside tunnel"/></div></div><Note>A VPN changes routing and adds encapsulation. The original TCP conversation remains between the client and website. A full tunnel needs an exception route for its own endpoint to avoid routing the tunnel back into itself.</Note></div></section><section className="panel text-panel"><div className="section-heading"><h2>A new envelope needs room.</h2><Toggle checked={ipv6} onChange={()=>setIpv6(!ipv6)} label="IPv6 outer header"/></div><div className="mtu-bar"><span style={{flex:1500-(ipv6?80:60)}}>Inner packet · {1500-(ipv6?80:60)} bytes maximum before padding</span><b style={{minWidth:100}}>+{ipv6?80:60} B</b></div><p>With a 1,500-byte outer path MTU, WireGuard’s base overhead is {ipv6?'40-byte IPv6 + 8-byte UDP + 32-byte WireGuard':'20-byte IPv4 + 8-byte UDP + 32-byte WireGuard'}. Padding and path constraints also matter. A 1,420-byte tunnel MTU is a common conservative configuration, not a universal rule.</p></section>{engineer&&<DeepDetails items={[
- ['TUN, TAP, and IPsec','A TUN interface exchanges layer-3 packets with userspace; TAP exchanges Ethernet frames. WireGuard is a routed layer-3 VPN. IPsec can use transport or tunnel mode, and ESP protects IP traffic. NAT traversal commonly wraps IPsec ESP in UDP.'],
- ['Full and split routes','A split tunnel installs selected destination prefixes, such as 10.20.0.0/16. Full-tunnel setups install default or covering routes and may use policy routing. DNS settings must be considered separately, and IPv6 needs an explicit routing policy too.'],
- ['Return path and translation','In this consumer VPN example, the exit applies source NAT. The website responds to the exit, which reverses the mapping, encrypts the returning inner packet, and sends it to the client. Corporate routed VPNs may use no exit NAT.'],
- ['Why UDP and why MTU matter','WireGuard uses UDP for its encrypted messages; inner TCP performs its own reliability. Running TCP inside a TCP tunnel can couple retransmissions and amplify stalls. Oversized packets require a correct MTU response or a suitable packetization strategy.']
- ]}/>}</>
+function TlsLab({
+  host,
+  path,
+  engineer,
+}: {
+  host: string;
+  path: string;
+  engineer: boolean;
+}) {
+  const [tab, setTab] = useState("Secure the connection"),
+    [protocol, setProtocol] = useState("HTTP/2"),
+    [invalid, setInvalid] = useState(false),
+    [render, setRender] = useState(0),
+    [envelope, setEnvelope] = useState(0);
+  const pipeline = [
+    "HTML & CSS",
+    "DOM + CSSOM",
+    "Style & layout",
+    "Paint",
+    "Composite",
+  ];
+  return (
+    <>
+      <section className="panel">
+        <Tabs
+          items={[
+            "Secure the connection",
+            "The HTTP request",
+            "Render the page",
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+        {tab === "Secure the connection" ? (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <div className="segmented">
+                <button
+                  className={protocol === "HTTP/2" ? "active" : ""}
+                  onClick={() => setProtocol("HTTP/2")}
+                >
+                  HTTP/2 over TCP
+                </button>
+                <button
+                  className={protocol === "HTTP/3" ? "active" : ""}
+                  onClick={() => setProtocol("HTTP/3")}
+                >
+                  HTTP/3 over QUIC
+                </button>
+              </div>
+              <Toggle
+                label="Wrong certificate hostname"
+                checked={invalid}
+                onChange={() => setInvalid(!invalid)}
+              />
+            </div>
+            <div className="tls-flow">
+              {[
+                protocol === "HTTP/2" ? "TCP handshake" : "QUIC Initial",
+                "ClientHello + key share",
+                "ServerHello + certificate",
+                invalid ? "Identity check fails" : "Verify identity + Finished",
+                invalid ? "Navigation blocked" : "Encrypted HTTP streams",
+              ].map((s, i) => (
+                <div
+                  key={s}
+                  className={`${invalid && i >= 3 ? "failed" : ""} ${i === 4 && !invalid ? "success" : ""}`}
+                >
+                  <span>
+                    {invalid && i >= 3 ? (
+                      <X />
+                    ) : i === 4 ? (
+                      <LockKeyhole />
+                    ) : i === 0 ? (
+                      <Network />
+                    ) : (
+                      <ShieldCheck />
+                    )}
+                  </span>
+                  <b>{s}</b>
+                  <small>
+                    {
+                      [
+                        "Transport setup",
+                        "SNI · ALPN · supported groups",
+                        "Key agreement · authentication",
+                        invalid
+                          ? "Hostname mismatch"
+                          : "Trust chain · signature · hostname",
+                        invalid
+                          ? "No request sent"
+                          : "AEAD-protected application data",
+                      ][i]
+                    }
+                  </small>
+                  {i < 4 && <ArrowRight className="flow-arrow" size={17} />}
+                </div>
+              ))}
+            </div>
+            <div className={`tls-verdict ${invalid ? "failed" : ""}`}>
+              <ShieldCheck size={27} />
+              <div>
+                <h3>
+                  {invalid
+                    ? "The browser must reject the identity."
+                    : "The server is authenticated. Traffic keys are ready."}
+                </h3>
+                <p>
+                  {invalid
+                    ? `A valid certificate for another hostname does not authenticate ${host}. Encryption alone is insufficient.`
+                    : protocol === "HTTP/2"
+                      ? "TLS records protect HTTP/2 frames carried by the TCP byte stream."
+                      : "QUIC carries the TLS 1.3 handshake and protects transport packets over UDP. There is no TCP handshake."}
+                </p>
+              </div>
+            </div>
+            <Note>
+              A certificate contains a public key and a signed identity binding.
+              Session traffic uses derived symmetric keys. Fresh TLS 1.3
+              normally needs one round trip after TCP; resumption and 0-RTT have
+              different behavior and replay considerations.
+            </Note>
+          </div>
+        ) : tab === "The HTTP request" ? (
+          <div className="lab-interior">
+            <div className="two-column">
+              <TerminalBox title="HTTP/2 · DECODED PSEUDO-HEADERS">{`:method: GET\n:scheme: https\n:authority: ${host}\n:path: ${path}\n\naccept: text/html\n\n# Response\n:status: 200\ncontent-type: text/html\ncache-control: public, max-age=300`}</TerminalBox>
+              <div className="envelope-demo">
+                <span className="eyebrow">CLICK AN ENVELOPE</span>
+                {[
+                  "Ethernet frame",
+                  "IPv4 packet",
+                  "TCP segment",
+                  "TLS record",
+                  "HTTP/2 frames",
+                ].map((s, i) => (
+                  <button
+                    key={s}
+                    className={envelope === i ? "selected" : ""}
+                    style={{ marginLeft: i * 14 }}
+                    onClick={() => setEnvelope(i)}
+                  >
+                    <span>{s}</span>
+                    <code>
+                      {
+                        [
+                          "Next-hop MAC · FCS",
+                          "Source / destination · TTL",
+                          "Ports · Seq · Ack",
+                          "Encrypted and authenticated",
+                          "HEADERS · DATA · stream ID",
+                        ][i]
+                      }
+                    </code>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="envelope-explanation">
+              {
+                [
+                  "An Ethernet frame delivers across one link. A router removes it and builds the appropriate envelope for the next link.",
+                  "The destination address guides routing. Routers do not need the HTTP hostname to forward this IP packet.",
+                  "TCP delivers an ordered byte stream. It does not preserve the boundaries between HTTP frames or TLS records.",
+                  "TLS records can span segments; several records may also share a segment. Observers cannot read the HTTP fields from the ciphertext.",
+                  "HTTP/2 multiplexes streams in binary frames and compresses headers with HPACK. This decoded view is for humans, not the wire format.",
+                ][envelope]
+              }
+            </p>
+            <Note>
+              These are logical layers, not a one-to-one packing rule. In
+              HTTP/3, HTTP frames ride QUIC streams over UDP, and QPACK replaces
+              HPACK. HTTP/2 stream multiplexing still shares TCP’s
+              transport-level head-of-line blocking.
+            </Note>
+          </div>
+        ) : (
+          <div className="lab-interior">
+            <div className="render-stages">
+              {pipeline.map((p, i) => (
+                <button
+                  className={render === i ? "active" : ""}
+                  key={p}
+                  onClick={() => setRender(i)}
+                >
+                  <span>{i + 1}</span>
+                  {p}
+                  <ChevronRight size={15} />
+                </button>
+              ))}
+            </div>
+            <div className="render-demo">
+              <div className="mini-browser">
+                <div className="browser-chrome">
+                  <i />
+                  <i />
+                  <i />
+                  <span>Teaching document · local example</span>
+                </div>
+                <div className={`render-output render-${render}`}>
+                  {render === 0 ? (
+                    <pre>{`<main>\n  <h1>Hello, internet.</h1>\n  <p>One request. Many layers.</p>\n  <button>Explore</button>\n</main>`}</pre>
+                  ) : render === 1 ? (
+                    <div className="dom-tree">
+                      <code>document</code>
+                      <ArrowDown />
+                      <code>main</code>
+                      <div>
+                        <code>h1</code>
+                        <code>p</code>
+                        <code>button</code>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rendered-teaching">
+                      <span>DELIVERED, BYTE BY BYTE</span>
+                      <h2>
+                        Hello,
+                        <br />
+                        internet.
+                      </h2>
+                      <p>One request. Many layers.</p>
+                      <span className="fake-button">
+                        Explore <ArrowUpRight size={14} />
+                      </span>
+                      <div className="render-orbit" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="render-description">
+                <Tag>STAGE {render + 1}</Tag>
+                <h2>{pipeline[render]}</h2>
+                <p>
+                  {
+                    [
+                      "The response body contains source bytes. Content decoding and character decoding turn them into text for the HTML parser.",
+                      "HTML tokens build a DOM tree. Stylesheets are parsed into CSS rules. Scripts can inspect or mutate the DOM.",
+                      "The browser resolves matching CSS rules and computes styles, then calculates positions and sizes. A box model becomes geometry.",
+                      "Paint records draw operations such as text, backgrounds, and borders. Rasterization turns those operations into pixels in tiles.",
+                      "The compositor assembles rasterized layers into the final frame. Some transforms and opacity animations can update without a new layout.",
+                    ][render]
+                  }
+                </p>
+                <button
+                  className="primary-button"
+                  onClick={() => setRender((r) => (r + 1) % 5)}
+                >
+                  {render === 4 ? "Replay" : "Next stage"}
+                  <ArrowRight size={15} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "TLS visibility boundaries",
+              "HTTPS hides HTTP paths, headers, and bodies from passive network observers, while IP addresses, timing, and volume remain observable. Traditional SNI exposes a name in ClientHello; ECH can protect it when supported. The TLS-terminating CDN can see the plaintext request.",
+            ],
+            [
+              "HTTP caches, CDNs, and origins",
+              "An edge cache keys requests using selected request properties. Cache-Control governs reuse; ETag and If-None-Match enable revalidation and 304 responses. A miss may fetch an origin. DNS, anycast, and load balancing influence endpoint selection, but use separate mechanisms.",
+            ],
+            [
+              "Critical rendering path",
+              "A preload scanner can discover resources ahead of the parser. Stylesheets may block rendering; classic scripts can block HTML parsing. defer and async change execution timing. Fetches, parsing, script execution, style, layout, paint, and compositing overlap rather than forming one perfectly serial pipeline.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
 }
 
-const media=[
- {name:'Twisted-pair copper',short:'Cat 6A',type:'copper',icon:Cable,speed:10000,range:'100 m',connector:'8P8C (“RJ45”)',standard:'10GBASE-T',body:'Four balanced pairs carry electrical signals. Twists help reject interference; the receiver decodes multi-level signaling. Auto-negotiation agrees link capabilities. PoE can supply power on compatible equipment.',signal:'Electrical voltage',example:'A 10 Gb/s Cat 6A channel is specified up to 100 m; installation quality matters.'},
- {name:'Single-mode fiber',short:'OS2 · LR',type:'fiber',icon:Zap,speed:10000,range:'10 km',connector:'LC (example)',standard:'10GBASE-LR',body:'A laser couples light into a narrow glass core. The example uses a pair of fibers, one for each direction. Transceivers set the wavelength, reach, and line rate; the strand alone has no single fixed speed.',signal:'Light intensity',example:'This 10GBASE-LR example uses 1,310 nm optics and supports a 10 km link budget.'},
- {name:'Multimode fiber',short:'OM4 · SR',type:'fiber',icon:Zap,speed:10000,range:'400 m',connector:'LC (example)',standard:'10GBASE-SR',body:'A larger core supports multiple light modes. Modal dispersion limits reach. Short-reach optics commonly use 850 nm light in data centers and buildings.',signal:'Light intensity',example:'10GBASE-SR over OM4 supports up to 400 m under its specified channel conditions.'},
- {name:'Coaxial cable',short:'DOCSIS access',type:'coax',icon:Cable,speed:1000,range:'Plant-dependent',connector:'F-type (example)',standard:'DOCSIS · shared RF',body:'A center conductor and surrounding shield guide radio-frequency signals. Cable access uses channelized spectrum shared among subscribers, coordinated by cable-modem infrastructure.',signal:'Modulated RF',example:'1 Gb/s below is an illustrative allocated data rate, not a guarantee or a DOCSIS maximum.'},
- {name:'Wireless',short:'Wi-Fi',type:'radio',icon:Wifi,speed:600,range:'Environment-dependent',connector:'Antenna',standard:'IEEE 802.11 family',body:'An antenna radiates a modulated electromagnetic wave. Wi-Fi stations contend for airtime, use link-layer acknowledgments, and can retransmit frames. Signal level, channel width, modulation, and interference affect capacity.',signal:'Radio wave',example:'600 Mb/s here is an example link rate. Application throughput is lower and varies with airtime and overhead.'}
+function VpnLab({ engineer }: { engineer: boolean }) {
+  const [mode, setMode] = useState("Full tunnel"),
+    [destination, setDestination] = useState("Public website"),
+    [observer, setObserver] = useState("ISP"),
+    [ipv6, setIpv6] = useState(false),
+    [dnsLeak, setDnsLeak] = useState(false);
+  const tunnel =
+    mode === "Full tunnel" ||
+    (mode === "Split tunnel" && destination === "Private service");
+  const privateTarget = destination === "Private service";
+  const dest = privateTarget ? "10.20.0.80" : "203.0.113.80";
+  return (
+    <>
+      <section className="panel">
+        <LabHeader title="Change the path">
+          <div className="segmented">
+            {["No VPN", "Full tunnel", "Split tunnel"].map((m) => (
+              <button
+                className={mode === m ? "active" : ""}
+                onClick={() => setMode(m)}
+                key={m}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </LabHeader>
+        <div className="lab-interior">
+          <div className="section-heading">
+            <label className="select-label">
+              Destination{" "}
+              <select
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+              >
+                <option>Public website</option>
+                <option>Private service</option>
+              </select>
+            </label>
+            <Tag color={tunnel ? "purple" : "gray"}>
+              {tunnel ? "ROUTED THROUGH TUNNEL" : "DIRECT ROUTE"}
+            </Tag>
+          </div>
+          <div className={`vpn-diagram ${tunnel ? "tunneled" : ""}`}>
+            <div>
+              <Monitor />
+              <b>Your device</b>
+              <code>{tunnel ? "10.8.0.2" : "192.168.1.20"}</code>
+            </div>
+            <div className="vpn-path">
+              <span>
+                {tunnel ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
+              </span>
+              <small>
+                {tunnel ? "Encrypted outer tunnel" : "Ordinary IP forwarding"}
+              </small>
+            </div>
+            <div>
+              <Globe2 />
+              <b>Your ISP</b>
+              <code>Forwards outer IP</code>
+            </div>
+            <div className="vpn-path">
+              <span>
+                {tunnel ? <LockKeyhole size={18} /> : <ArrowRight size={20} />}
+              </span>
+            </div>
+            {tunnel && (
+              <>
+                <div className="vpn-endpoint">
+                  <ShieldCheck />
+                  <b>VPN endpoint</b>
+                  <code>192.0.2.10</code>
+                </div>
+                <div className="vpn-path">
+                  <ArrowRight size={20} />
+                </div>
+              </>
+            )}
+            <div>
+              <Server />
+              <b>{privateTarget ? "Private server" : "Website"}</b>
+              <code>{dest}</code>
+            </div>
+          </div>
+          {privateTarget && !tunnel && (
+            <div className="error-banner">
+              No private route in this scenario. The public internet does not
+              carry this private destination to your organization.
+            </div>
+          )}
+          <div className="two-column">
+            <div className="nested-packet">
+              <span className="eyebrow">ON YOUR ISP LINK · AFTER HOME NAT</span>
+              {tunnel ? (
+                <div className="outer-packet">
+                  <b>Outer IP + UDP</b>
+                  <code>198.51.100.24 → 192.0.2.10</code>
+                  <div className="encrypted-packet">
+                    <LockKeyhole size={17} />
+                    <b>WireGuard encrypted payload</b>
+                    <div>
+                      <code>Inner IP: 10.8.0.2 → {dest}</code>
+                      <code>TCP → TLS → HTTP</code>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="outer-packet direct">
+                  <b>IP packet</b>
+                  <code>198.51.100.24 → {dest}</code>
+                  <div className="encrypted-packet">
+                    <b>TCP → TLS → HTTP</b>
+                    <small>HTTPS still encrypts application data.</small>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="observer-card">
+              <span className="eyebrow">LOOK THROUGH THEIR EYES</span>
+              <Tabs
+                items={["ISP", "VPN provider", "Website"]}
+                value={observer}
+                onChange={setObserver}
+              />
+              <h3>{observer} can observe…</h3>
+              <p>
+                {observer === "ISP"
+                  ? tunnel
+                    ? `The VPN server address, timing, volume, and outer UDP traffic.${dnsLeak ? " DNS sent outside the tunnel can additionally reveal query names." : " The inner website address is hidden by the tunnel."}`
+                    : "The destination IP and traffic metadata. HTTPS protects content; ordinary DNS and non-ECH SNI may reveal the hostname."
+                  : observer === "VPN provider"
+                    ? tunnel
+                      ? "Your incoming public IP and decrypted inner destination. It may see DNS and non-ECH SNI. HTTPS application content remains encrypted until its TLS endpoint."
+                      : "This traffic never traverses the VPN provider in the selected mode."
+                    : tunnel
+                      ? "The VPN exit IP (assuming exit NAT), and the HTTP request after TLS termination. Accounts and cookies can still identify you."
+                      : "Your public egress IP, and HTTP request data after terminating TLS."}
+              </p>
+              <Toggle
+                checked={dnsLeak}
+                onChange={() => setDnsLeak(!dnsLeak)}
+                label="Send DNS outside tunnel"
+              />
+            </div>
+          </div>
+          <Note>
+            A VPN changes routing and adds encapsulation. The original TCP
+            conversation remains between the client and website. A full tunnel
+            needs an exception route for its own endpoint to avoid routing the
+            tunnel back into itself.
+          </Note>
+        </div>
+      </section>
+      <section className="panel text-panel">
+        <div className="section-heading">
+          <h2>A new envelope needs room.</h2>
+          <Toggle
+            checked={ipv6}
+            onChange={() => setIpv6(!ipv6)}
+            label="IPv6 outer header"
+          />
+        </div>
+        <div className="mtu-bar">
+          <span style={{ flex: 1500 - (ipv6 ? 80 : 60) }}>
+            Inner packet · {1500 - (ipv6 ? 80 : 60)} bytes maximum before
+            padding
+          </span>
+          <b style={{ minWidth: 100 }}>+{ipv6 ? 80 : 60} B</b>
+        </div>
+        <p>
+          With a 1,500-byte outer path MTU, WireGuard’s base overhead is{" "}
+          {ipv6
+            ? "40-byte IPv6 + 8-byte UDP + 32-byte WireGuard"
+            : "20-byte IPv4 + 8-byte UDP + 32-byte WireGuard"}
+          . Padding and path constraints also matter. A 1,420-byte tunnel MTU is
+          a common conservative configuration, not a universal rule.
+        </p>
+      </section>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "TUN, TAP, and IPsec",
+              "A TUN interface exchanges layer-3 packets with userspace; TAP exchanges Ethernet frames. WireGuard is a routed layer-3 VPN. IPsec can use transport or tunnel mode, and ESP protects IP traffic. NAT traversal commonly wraps IPsec ESP in UDP.",
+            ],
+            [
+              "Full and split routes",
+              "A split tunnel installs selected destination prefixes, such as 10.20.0.0/16. Full-tunnel setups install default or covering routes and may use policy routing. DNS settings must be considered separately, and IPv6 needs an explicit routing policy too.",
+            ],
+            [
+              "Return path and translation",
+              "In this consumer VPN example, the exit applies source NAT. The website responds to the exit, which reverses the mapping, encrypts the returning inner packet, and sends it to the client. Corporate routed VPNs may use no exit NAT.",
+            ],
+            [
+              "Why UDP and why MTU matter",
+              "WireGuard uses UDP for its encrypted messages; inner TCP performs its own reliability. Running TCP inside a TCP tunnel can couple retransmissions and amplify stalls. Oversized packets require a correct MTU response or a suitable packetization strategy.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
+}
+
+const media = [
+  {
+    name: "Twisted-pair copper",
+    short: "Cat 6A",
+    type: "copper",
+    icon: Cable,
+    speed: 10000,
+    range: "100 m",
+    connector: "8P8C (“RJ45”)",
+    standard: "10GBASE-T",
+    body: "Four balanced pairs carry electrical signals. Twists help reject interference; the receiver decodes multi-level signaling. Auto-negotiation agrees link capabilities. PoE can supply power on compatible equipment.",
+    signal: "Electrical voltage",
+    example:
+      "A 10 Gb/s Cat 6A channel is specified up to 100 m; installation quality matters.",
+  },
+  {
+    name: "Single-mode fiber",
+    short: "OS2 · LR",
+    type: "fiber",
+    icon: Zap,
+    speed: 10000,
+    range: "10 km",
+    connector: "LC (example)",
+    standard: "10GBASE-LR",
+    body: "A laser couples light into a narrow glass core. The example uses a pair of fibers, one for each direction. Transceivers set the wavelength, reach, and line rate; the strand alone has no single fixed speed.",
+    signal: "Light intensity",
+    example:
+      "This 10GBASE-LR example uses 1,310 nm optics and supports a 10 km link budget.",
+  },
+  {
+    name: "Multimode fiber",
+    short: "OM4 · SR",
+    type: "fiber",
+    icon: Zap,
+    speed: 10000,
+    range: "400 m",
+    connector: "LC (example)",
+    standard: "10GBASE-SR",
+    body: "A larger core supports multiple light modes. Modal dispersion limits reach. Short-reach optics commonly use 850 nm light in data centers and buildings.",
+    signal: "Light intensity",
+    example:
+      "10GBASE-SR over OM4 supports up to 400 m under its specified channel conditions.",
+  },
+  {
+    name: "Coaxial cable",
+    short: "DOCSIS access",
+    type: "coax",
+    icon: Cable,
+    speed: 1000,
+    range: "Plant-dependent",
+    connector: "F-type (example)",
+    standard: "DOCSIS · shared RF",
+    body: "A center conductor and surrounding shield guide radio-frequency signals. Cable access uses channelized spectrum shared among subscribers, coordinated by cable-modem infrastructure.",
+    signal: "Modulated RF",
+    example:
+      "1 Gb/s below is an illustrative allocated data rate, not a guarantee or a DOCSIS maximum.",
+  },
+  {
+    name: "Wireless",
+    short: "Wi-Fi",
+    type: "radio",
+    icon: Wifi,
+    speed: 600,
+    range: "Environment-dependent",
+    connector: "Antenna",
+    standard: "IEEE 802.11 family",
+    body: "An antenna radiates a modulated electromagnetic wave. Wi-Fi stations contend for airtime, use link-layer acknowledgments, and can retransmit frames. Signal level, channel width, modulation, and interference affect capacity.",
+    signal: "Radio wave",
+    example:
+      "600 Mb/s here is an example link rate. Application throughput is lower and varies with airtime and overhead.",
+  },
 ];
-function PhysicalLab(){
- const [selected,setSelected]=useState(0),[distance,setDistance]=useState(1),[bytes,setBytes]=useState(1500);const m=media[selected];const time=transmissionTime(bytes,m.speed,distance,m.type);
- return <><div className="media-picker">{media.map((x,i)=>{const Icon=x.icon;return <button className={selected===i?'selected':''} key={x.name} onClick={()=>setSelected(i)}><Icon size={25}/><b>{x.name}</b><small>{x.short}</small></button>})}</div><section className="panel physical-panel"><div className={`cable-visual ${m.type}`}><div className="signal-label"><span className="status-dot"/> {m.signal.toUpperCase()}</div>{m.type==='copper'?<div className="twisted-pairs">{['orange','green','blue','brown'].map(c=><div className={`twisted-pair ${c}`} key={c}><svg viewBox="0 0 500 50"><path d="M0 10 Q25 45 50 10 T150 10 T250 10 T350 10 T450 10 T550 10"/><path d="M0 40 Q25 5 50 40 T150 40 T250 40 T350 40 T450 40 T550 40"/></svg></div>)}</div>:m.type==='fiber'?<div className="fiber-strands">{[0,1,2].map(i=><div key={i}><span style={{animationDelay:`${i*.6}s`}}/></div>)}<span className="fiber-core">GLASS CORE → CLADDING → PROTECTIVE COATING</span></div>:m.type==='coax'?<div className="coax-cutaway"><div><div><div/></div></div><span>Jacket · shield · dielectric · conductor</span></div>:<div className="radio-visual"><Wifi size={65}/>{[0,1,2].map(i=><i key={i} style={{animationDelay:`${i*.6}s`}}/>)}</div>}<div className="bit-stream">01001000 <span>01100101</span> 01101100 <span>01101100</span> 01101111</div><span className="small-text">Conceptual signal illustration; actual line coding is more complex.</span></div><div className="text-panel"><Tag color="blue">{m.standard}</Tag><h2>{m.name}</h2><p>{m.body}</p><Facts items={[["Connector",m.connector],["Example reach",m.range],["Example line rate",`${m.speed.toLocaleString()} Mb/s`],["Carrier",m.signal]]}/><p className="small-text">{m.example}</p></div></section><section className="panel text-panel"><div className="section-heading"><div><h2>Bandwidth isn’t the speed of light.</h2><p>Compare serialization time with signal propagation over a path.</p></div><Tag>DELAY CALCULATOR</Tag></div><div className="controls-row"><label>Path distance <b>{distance} km</b><input aria-label="Path distance" type="range" min="1" max="1000" value={distance} onChange={e=>setDistance(Number(e.target.value))}/></label><label>Frame / packet size <select aria-label="Packet size" value={bytes} onChange={e=>setBytes(Number(e.target.value))}><option value="64">64 bytes</option><option value="1500">1,500 bytes</option><option value="9000">9,000 bytes</option></select></label></div><div className="window-stats"><div><span>Put bits onto the link</span><b>{time.serialization.toFixed(4)}<small> ms</small></b><p>Serialization = bits ÷ bit rate</p></div><div><span>Travel through the medium</span><b>{time.propagation.toFixed(3)}<small> ms</small></b><p>Propagation ≈ distance ÷ signal speed</p></div><div className="green-stat"><span>These two delays combined</span><b>{time.total.toFixed(3)}<small> ms</small></b><p>Excludes queuing, processing, and overhead</p></div></div><Note>This is an idealized path-delay calculator, not a valid single cable at every distance. Beyond the listed reach, appropriate repeaters, optical systems, or routed links are required. Fiber/copper speed is approximated as 200,000 km/s; radio as 300,000 km/s.</Note></section></>
+function PhysicalLab() {
+  const [selected, setSelected] = useState(0),
+    [distance, setDistance] = useState(1),
+    [bytes, setBytes] = useState(1500);
+  const m = media[selected];
+  const time = transmissionTime(bytes, m.speed, distance, m.type);
+  return (
+    <>
+      <div className="media-picker">
+        {media.map((x, i) => {
+          const Icon = x.icon;
+          return (
+            <button
+              className={selected === i ? "selected" : ""}
+              key={x.name}
+              onClick={() => setSelected(i)}
+            >
+              <Icon size={25} />
+              <b>{x.name}</b>
+              <small>{x.short}</small>
+            </button>
+          );
+        })}
+      </div>
+      <section className="panel physical-panel">
+        <div className={`cable-visual ${m.type}`}>
+          <div className="signal-label">
+            <span className="status-dot" /> {m.signal.toUpperCase()}
+          </div>
+          {m.type === "copper" ? (
+            <div className="twisted-pairs">
+              {["orange", "green", "blue", "brown"].map((c) => (
+                <div className={`twisted-pair ${c}`} key={c}>
+                  <svg viewBox="0 0 500 50">
+                    <path d="M0 10 Q25 45 50 10 T150 10 T250 10 T350 10 T450 10 T550 10" />
+                    <path d="M0 40 Q25 5 50 40 T150 40 T250 40 T350 40 T450 40 T550 40" />
+                  </svg>
+                </div>
+              ))}
+            </div>
+          ) : m.type === "fiber" ? (
+            <div className="fiber-strands">
+              {[0, 1, 2].map((i) => (
+                <div key={i}>
+                  <span style={{ animationDelay: `${i * 0.6}s` }} />
+                </div>
+              ))}
+              <span className="fiber-core">
+                GLASS CORE → CLADDING → PROTECTIVE COATING
+              </span>
+            </div>
+          ) : m.type === "coax" ? (
+            <div className="coax-cutaway">
+              <div>
+                <div>
+                  <div />
+                </div>
+              </div>
+              <span>Jacket · shield · dielectric · conductor</span>
+            </div>
+          ) : (
+            <div className="radio-visual">
+              <Wifi size={65} />
+              {[0, 1, 2].map((i) => (
+                <i key={i} style={{ animationDelay: `${i * 0.6}s` }} />
+              ))}
+            </div>
+          )}
+          <div className="bit-stream">
+            01001000 <span>01100101</span> 01101100 <span>01101100</span>{" "}
+            01101111
+          </div>
+          <span className="small-text">
+            Conceptual signal illustration; actual line coding is more complex.
+          </span>
+        </div>
+        <div className="text-panel">
+          <Tag color="blue">{m.standard}</Tag>
+          <h2>{m.name}</h2>
+          <p>{m.body}</p>
+          <Facts
+            items={[
+              ["Connector", m.connector],
+              ["Example reach", m.range],
+              ["Example line rate", `${m.speed.toLocaleString()} Mb/s`],
+              ["Carrier", m.signal],
+            ]}
+          />
+          <p className="small-text">{m.example}</p>
+        </div>
+      </section>
+      <section className="panel text-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Bandwidth isn’t the speed of light.</h2>
+            <p>
+              Compare serialization time with signal propagation over a path.
+            </p>
+          </div>
+          <Tag>DELAY CALCULATOR</Tag>
+        </div>
+        <div className="controls-row">
+          <label>
+            Path distance <b>{distance} km</b>
+            <input
+              aria-label="Path distance"
+              type="range"
+              min="1"
+              max="1000"
+              value={distance}
+              onChange={(e) => setDistance(Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Frame / packet size{" "}
+            <select
+              aria-label="Packet size"
+              value={bytes}
+              onChange={(e) => setBytes(Number(e.target.value))}
+            >
+              <option value="64">64 bytes</option>
+              <option value="1500">1,500 bytes</option>
+              <option value="9000">9,000 bytes</option>
+            </select>
+          </label>
+        </div>
+        <div className="window-stats">
+          <div>
+            <span>Put bits onto the link</span>
+            <b>
+              {time.serialization.toFixed(4)}
+              <small> ms</small>
+            </b>
+            <p>Serialization = bits ÷ bit rate</p>
+          </div>
+          <div>
+            <span>Travel through the medium</span>
+            <b>
+              {time.propagation.toFixed(3)}
+              <small> ms</small>
+            </b>
+            <p>Propagation ≈ distance ÷ signal speed</p>
+          </div>
+          <div className="green-stat">
+            <span>These two delays combined</span>
+            <b>
+              {time.total.toFixed(3)}
+              <small> ms</small>
+            </b>
+            <p>Excludes queuing, processing, and overhead</p>
+          </div>
+        </div>
+        <Note>
+          This is an idealized path-delay calculator, not a valid single cable
+          at every distance. Beyond the listed reach, appropriate repeaters,
+          optical systems, or routed links are required. Fiber/copper speed is
+          approximated as 200,000 km/s; radio as 300,000 km/s.
+        </Note>
+      </section>
+    </>
+  );
 }
 
-function SwitchingLab({engineer}:{engineer:boolean}){
- const [tab,setTab]=useState('VLANs & forwarding'),[vlan,setVlan]=useState(10),[trunk,setTrunk]=useState(true),[known,setKnown]=useState(true),[linkDown,setLinkDown]=useState(false);
- const delivered=vlan===10&&trunk;
- return <><section className="panel"><Tabs items={['VLANs & forwarding','Spanning tree','ARP & neighbors']} value={tab} onChange={setTab}/>{tab==='VLANs & forwarding'?<div className="lab-interior"><div className="controls-row"><label>Destination access VLAN<select value={vlan} onChange={e=>setVlan(Number(e.target.value))}><option value="10">VLAN 10</option><option value="20">VLAN 20</option></select></label><Toggle label="Allow VLAN 10 on trunk" checked={trunk} onChange={()=>setTrunk(!trunk)}/><Toggle label="Destination MAC learned" checked={known} onChange={()=>setKnown(!known)}/></div><div className="switching-visual"><div><Monitor/><b>Device A</b><Tag>VLAN 10</Tag></div><span className="switch-link">Untagged</span><div><Network/><b>Switch 1</b><code>Access → trunk</code></div><span className={`switch-link tagged ${trunk?'':'broken'}`}>{trunk?'802.1Q · VID 10':'VLAN 10 blocked'}</span><div><Network/><b>Switch 2</b><code>Trunk → access</code></div><span className="switch-link">Untagged</span><div><Monitor/><b>Device B</b><Tag color={vlan===10?'green':'purple'}>VLAN {vlan}</Tag></div></div><div className={`tls-verdict ${delivered?'':'failed'}`}><span>{delivered?<CheckCircle2 size={26}/>:<X size={26}/>}</span><div><h3>{delivered?(known?'Forwarded to the learned destination port.':'Flooded within VLAN 10; Device B receives it.'):'This frame cannot reach Device B.'}</h3><p>{!trunk?'VLAN 10 is not allowed across the trunk.':vlan!==10?'VLANs are separate broadcast domains. A layer-3 gateway and policy are needed to route between them.':known?'A destination MAC lookup selects the egress port. The VLAN tag is removed on this ordinary access port.':'Unknown unicast floods eligible ports in this VLAN, excluding the ingress port. A switch learns source MACs, not destination MACs, from arriving frames.'}</p></div></div><div className="table-scroll"><table><thead><tr><th>Switch</th><th>VLAN</th><th>Destination MAC</th><th>Port</th><th>Action</th></tr></thead><tbody><tr><td>Switch 1</td><td>10</td><td><code>02:00:00:00:00:0b</code></td><td>{known?'trunk1':'Unknown'}</td><td>{known?'Forward':'Flood in VLAN 10'}</td></tr><tr><td>Switch 2</td><td>{vlan}</td><td><code>02:00:00:00:00:0b</code></td><td>{known?'access2':'Unknown'}</td><td>{vlan===10?'Eligible egress':'Different VLAN'}</td></tr></tbody></table></div></div>:tab==='Spanning tree'?<div className="lab-interior"><div className="section-heading"><h2>Redundant cables must not create a loop.</h2><Toggle checked={linkDown} onChange={()=>setLinkDown(!linkDown)} label="Fail primary A–B link"/></div><svg className="stp-graph" viewBox="0 0 660 280" role="img" aria-label="Three switches in a triangle with one blocked or failed link"><path d="M330 50 L100 225" stroke={linkDown?'#d77966':'#2c8260'} strokeWidth="4" strokeDasharray={linkDown?'8 5':undefined}/><path d="M330 50 L560 225" stroke="#2c8260" strokeWidth="4"/><path d="M100 225 H560" stroke={linkDown?'#2c8260':'#d8a352'} strokeWidth="4" strokeDasharray={linkDown?undefined:'8 5'}/>{[{x:330,y:50,t:'A · root'},{x:100,y:225,t:'B'},{x:560,y:225,t:'C'}].map(n=><g key={n.t}><rect x={n.x-47} y={n.y-23} width="94" height="46" rx="10" fill="#eef4ee" stroke="#2c8260"/><text textAnchor="middle" x={n.x} y={n.y+6}>{n.t}</text></g>)}<text x="330" y="252" textAnchor="middle" fill={linkDown?'#2c8260':'#9d702a'}>{linkDown?'Alternate link now forwarding':'Alternate port discarding on B'}</text></svg><p>{linkDown?'After failure detection and reconvergence, the alternate path via C carries traffic from B to root A.':'BPDUs elect a root bridge and select root/designated/alternate roles. The non-forwarding alternate port breaks the layer-2 loop while preserving a backup path.'}</p><Note>Ethernet frames have no IP-style TTL. A loop can produce a broadcast storm and MAC flapping. RSTP improves convergence; the diagram shows the final stable state. An aggregated LACP bundle is treated as one logical link.</Note></div>:<div className="lab-interior"><div className="arp-flow"><div><Monitor size={35}/><h3>192.168.1.20 /24</h3><code>Destination: 203.0.113.80</code></div><ArrowRight/><div><Radio size={35}/><h3>Broadcast ARP request</h3><code>Who has 192.168.1.1?</code><small>ff:ff:ff:ff:ff:ff · LAN only</small></div><ArrowRight/><div><Network size={35}/><h3>Gateway replies</h3><code>192.168.1.1 → 02:00:00:00:01:01</code></div></div><Facts items={[["IPv4 destination","203.0.113.80 (remote website)"],["Ethernet destination","02:00:00:00:01:01 (local gateway)"],["What ARP resolves","On-link IPv4 address → link-layer address"],["IPv6 equivalent","ICMPv6 Neighbor Solicitation / Advertisement"]]}/><Note>Routing selects an on-link next hop first. Neighbor resolution finds its link-layer address. ARP broadcasts do not cross a router. On IPv6, solicited-node multicast replaces this ARP broadcast mechanism.</Note></div>}</section>{engineer&&<DeepDetails items={[
- ['Trunks and native VLANs','An 802.1Q tag carries a 12-bit VLAN ID, 3-bit priority, and DEI bit. Access links ordinarily carry one VLAN untagged. Trunks can carry multiple VLANs; native/untagged handling must be consistent at both ends. Allowed VLAN sets constrain the trunk.'],
- ['Learning, aging, and security','Switches learn the source MAC and VLAN on the incoming port and age dynamic entries. An unknown destination is flooded only in the applicable VLAN. Port security, DHCP snooping, ARP inspection, and 802.1X address different threats; they are not substitutes for each other.'],
- ['Wireless and shared media','An access point bridges 802.11 traffic to a distribution system. Wi-Fi can use three or four address fields depending on the mode, unlike ordinary Ethernet’s two MAC fields. Airtime contention and link-layer retries exist even while TCP also provides end-to-end reliability.'],
- ['Link aggregation and gateways','LACP negotiates an aggregated link. Hash-based distribution usually keeps a single flow on one member, so a bundle does not multiply one flow’s speed. VRRP provides a virtual first-hop gateway; it solves a different failure problem from spanning tree.']
- ]}/>}</>
+function SwitchingLab({ engineer }: { engineer: boolean }) {
+  const [tab, setTab] = useState("VLANs & forwarding"),
+    [vlan, setVlan] = useState(10),
+    [trunk, setTrunk] = useState(true),
+    [known, setKnown] = useState(true),
+    [linkDown, setLinkDown] = useState(false);
+  const delivered = vlan === 10 && trunk;
+  return (
+    <>
+      <section className="panel">
+        <Tabs
+          items={["VLANs & forwarding", "Spanning tree", "ARP & neighbors"]}
+          value={tab}
+          onChange={setTab}
+        />
+        {tab === "VLANs & forwarding" ? (
+          <div className="lab-interior">
+            <div className="controls-row">
+              <label>
+                Destination access VLAN
+                <select
+                  value={vlan}
+                  onChange={(e) => setVlan(Number(e.target.value))}
+                >
+                  <option value="10">VLAN 10</option>
+                  <option value="20">VLAN 20</option>
+                </select>
+              </label>
+              <Toggle
+                label="Allow VLAN 10 on trunk"
+                checked={trunk}
+                onChange={() => setTrunk(!trunk)}
+              />
+              <Toggle
+                label="Destination MAC learned"
+                checked={known}
+                onChange={() => setKnown(!known)}
+              />
+            </div>
+            <div className="switching-visual">
+              <div>
+                <Monitor />
+                <b>Device A</b>
+                <Tag>VLAN 10</Tag>
+              </div>
+              <span className="switch-link">Untagged</span>
+              <div>
+                <Network />
+                <b>Switch 1</b>
+                <code>Access → trunk</code>
+              </div>
+              <span className={`switch-link tagged ${trunk ? "" : "broken"}`}>
+                {trunk ? "802.1Q · VID 10" : "VLAN 10 blocked"}
+              </span>
+              <div>
+                <Network />
+                <b>Switch 2</b>
+                <code>Trunk → access</code>
+              </div>
+              <span className="switch-link">Untagged</span>
+              <div>
+                <Monitor />
+                <b>Device B</b>
+                <Tag color={vlan === 10 ? "green" : "purple"}>VLAN {vlan}</Tag>
+              </div>
+            </div>
+            <div className={`tls-verdict ${delivered ? "" : "failed"}`}>
+              <span>
+                {delivered ? <CheckCircle2 size={26} /> : <X size={26} />}
+              </span>
+              <div>
+                <h3>
+                  {delivered
+                    ? known
+                      ? "Forwarded to the learned destination port."
+                      : "Flooded within VLAN 10; Device B receives it."
+                    : "This frame cannot reach Device B."}
+                </h3>
+                <p>
+                  {!trunk
+                    ? "VLAN 10 is not allowed across the trunk."
+                    : vlan !== 10
+                      ? "VLANs are separate broadcast domains. A layer-3 gateway and policy are needed to route between them."
+                      : known
+                        ? "A destination MAC lookup selects the egress port. The VLAN tag is removed on this ordinary access port."
+                        : "Unknown unicast floods eligible ports in this VLAN, excluding the ingress port. A switch learns source MACs, not destination MACs, from arriving frames."}
+                </p>
+              </div>
+            </div>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Switch</th>
+                    <th>VLAN</th>
+                    <th>Destination MAC</th>
+                    <th>Port</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Switch 1</td>
+                    <td>10</td>
+                    <td>
+                      <code>02:00:00:00:00:0b</code>
+                    </td>
+                    <td>{known ? "trunk1" : "Unknown"}</td>
+                    <td>{known ? "Forward" : "Flood in VLAN 10"}</td>
+                  </tr>
+                  <tr>
+                    <td>Switch 2</td>
+                    <td>{vlan}</td>
+                    <td>
+                      <code>02:00:00:00:00:0b</code>
+                    </td>
+                    <td>{known ? "access2" : "Unknown"}</td>
+                    <td>
+                      {vlan === 10 ? "Eligible egress" : "Different VLAN"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : tab === "Spanning tree" ? (
+          <div className="lab-interior">
+            <div className="section-heading">
+              <h2>Redundant cables must not create a loop.</h2>
+              <Toggle
+                checked={linkDown}
+                onChange={() => setLinkDown(!linkDown)}
+                label="Fail primary A–B link"
+              />
+            </div>
+            <svg
+              className="stp-graph"
+              viewBox="0 0 660 280"
+              role="img"
+              aria-label="Three switches in a triangle with one blocked or failed link"
+            >
+              <path
+                d="M330 50 L100 225"
+                stroke={linkDown ? "#d77966" : "#2c8260"}
+                strokeWidth="4"
+                strokeDasharray={linkDown ? "8 5" : undefined}
+              />
+              <path d="M330 50 L560 225" stroke="#2c8260" strokeWidth="4" />
+              <path
+                d="M100 225 H560"
+                stroke={linkDown ? "#2c8260" : "#d8a352"}
+                strokeWidth="4"
+                strokeDasharray={linkDown ? undefined : "8 5"}
+              />
+              {[
+                { x: 330, y: 50, t: "A · root" },
+                { x: 100, y: 225, t: "B" },
+                { x: 560, y: 225, t: "C" },
+              ].map((n) => (
+                <g key={n.t}>
+                  <rect
+                    x={n.x - 47}
+                    y={n.y - 23}
+                    width="94"
+                    height="46"
+                    rx="10"
+                    fill="#eef4ee"
+                    stroke="#2c8260"
+                  />
+                  <text textAnchor="middle" x={n.x} y={n.y + 6}>
+                    {n.t}
+                  </text>
+                </g>
+              ))}
+              <text
+                x="330"
+                y="252"
+                textAnchor="middle"
+                fill={linkDown ? "#2c8260" : "#9d702a"}
+              >
+                {linkDown
+                  ? "Alternate link now forwarding"
+                  : "Alternate port discarding on B"}
+              </text>
+            </svg>
+            <p>
+              {linkDown
+                ? "After failure detection and reconvergence, the alternate path via C carries traffic from B to root A."
+                : "BPDUs elect a root bridge and select root/designated/alternate roles. The non-forwarding alternate port breaks the layer-2 loop while preserving a backup path."}
+            </p>
+            <Note>
+              Ethernet frames have no IP-style TTL. A loop can produce a
+              broadcast storm and MAC flapping. RSTP improves convergence; the
+              diagram shows the final stable state. An aggregated LACP bundle is
+              treated as one logical link.
+            </Note>
+          </div>
+        ) : (
+          <div className="lab-interior">
+            <div className="arp-flow">
+              <div>
+                <Monitor size={35} />
+                <h3>192.168.1.20 /24</h3>
+                <code>Destination: 203.0.113.80</code>
+              </div>
+              <ArrowRight />
+              <div>
+                <Radio size={35} />
+                <h3>Broadcast ARP request</h3>
+                <code>Who has 192.168.1.1?</code>
+                <small>ff:ff:ff:ff:ff:ff · LAN only</small>
+              </div>
+              <ArrowRight />
+              <div>
+                <Network size={35} />
+                <h3>Gateway replies</h3>
+                <code>192.168.1.1 → 02:00:00:00:01:01</code>
+              </div>
+            </div>
+            <Facts
+              items={[
+                ["IPv4 destination", "203.0.113.80 (remote website)"],
+                ["Ethernet destination", "02:00:00:00:01:01 (local gateway)"],
+                [
+                  "What ARP resolves",
+                  "On-link IPv4 address → link-layer address",
+                ],
+                [
+                  "IPv6 equivalent",
+                  "ICMPv6 Neighbor Solicitation / Advertisement",
+                ],
+              ]}
+            />
+            <Note>
+              Routing selects an on-link next hop first. Neighbor resolution
+              finds its link-layer address. ARP broadcasts do not cross a
+              router. On IPv6, solicited-node multicast replaces this ARP
+              broadcast mechanism.
+            </Note>
+          </div>
+        )}
+      </section>
+      {engineer && (
+        <DeepDetails
+          items={[
+            [
+              "Trunks and native VLANs",
+              "An 802.1Q tag carries a 12-bit VLAN ID, 3-bit priority, and DEI bit. Access links ordinarily carry one VLAN untagged. Trunks can carry multiple VLANs; native/untagged handling must be consistent at both ends. Allowed VLAN sets constrain the trunk.",
+            ],
+            [
+              "Learning, aging, and security",
+              "Switches learn the source MAC and VLAN on the incoming port and age dynamic entries. An unknown destination is flooded only in the applicable VLAN. Port security, DHCP snooping, ARP inspection, and 802.1X address different threats; they are not substitutes for each other.",
+            ],
+            [
+              "Wireless and shared media",
+              "An access point bridges 802.11 traffic to a distribution system. Wi-Fi can use three or four address fields depending on the mode, unlike ordinary Ethernet’s two MAC fields. Airtime contention and link-layer retries exist even while TCP also provides end-to-end reliability.",
+            ],
+            [
+              "Link aggregation and gateways",
+              "LACP negotiates an aggregated link. Hash-based distribution usually keeps a single flow on one member, so a bundle does not multiply one flow’s speed. VRRP provides a virtual first-hop gateway; it solves a different failure problem from spanning tree.",
+            ],
+          ]}
+        />
+      )}
+    </>
+  );
 }
 
-function DeepDetails({items}:{items:string[][]}){return <section className="deep-details"><div className="section-label"><span><Code2 size={14}/> ENGINEER’S NOTES</span><span>Open the next layer.</span></div>{items.map(([title,body])=><details key={title}><summary>{title}<ChevronRight size={16}/></summary><p>{body}</p></details>)}</section>}
-const checks:Record<string,{q:string,a:string[],correct:number,why:string}>={
- dns:{q:'Who follows the root → TLD → authoritative chain on a cache miss?',a:['The browser itself','The recursive resolver','Every router on the path'],correct:1,why:'The stub asks for recursion. The recursive resolver follows referrals and caches the results.'},
- tcp:{q:'A segment contains bytes 1001–2000. What cumulative ACK means they all arrived in order?',a:['1001','2000','2001'],correct:2,why:'ACK identifies the next byte expected. After byte 2000, that is 2001.'},
- routing:{q:'An installed /24 and /8 both match a destination. Which forwards the packet?',a:['The /24, even if the /8 has a better metric','The one with the lowest BGP local preference','The /8 because it reaches more addresses'],correct:0,why:'Forwarding chooses the longest matching prefix. Route metrics select candidates for the same prefix earlier.'},
- tls:{q:'Which protocol replaces TCP when the browser uses HTTP/3?',a:['TLS directly over IP','QUIC over UDP','An unencrypted UDP stream'],correct:1,why:'QUIC provides secure transport and streams over UDP, integrating the TLS 1.3 handshake.'},
- vpn:{q:'With a full VPN tunnel, which IP destination does your ISP route toward?',a:['The website’s inner destination','The VPN endpoint’s outer destination','The local tunnel interface'],correct:1,why:'The ISP forwards the visible outer packet. The original destination is inside the encrypted tunnel payload.'},
- physical:{q:'Doubling a fiber link’s bit rate changes which delay directly?',a:['Serialization delay','Propagation delay','The speed of light in glass'],correct:0,why:'The bits are put onto the link faster. Their propagation speed through the medium remains essentially the same.'},
- switching:{q:'The destination MAC is unknown. How does a switch handle the frame?',a:['Broadcast it across all VLANs','Flood eligible ports in the same VLAN','Ask BGP for a route'],correct:1,why:'Unknown unicast is flooded within its VLAN, excluding the ingress port. Source MACs are learned from arriving frames.'}
+function DeepDetails({ items }: { items: string[][] }) {
+  return (
+    <section className="deep-details">
+      <div className="section-label">
+        <span>
+          <Code2 size={14} /> ENGINEER’S NOTES
+        </span>
+        <span>Open the next layer.</span>
+      </div>
+      {items.map(([title, body]) => (
+        <details key={title}>
+          <summary>
+            {title}
+            <ChevronRight size={16} />
+          </summary>
+          <p>{body}</p>
+        </details>
+      ))}
+    </section>
+  );
+}
+const checks: Record<
+  string,
+  { q: string; a: string[]; correct: number; why: string }
+> = {
+  dns: {
+    q: "Who follows the root → TLD → authoritative chain on a cache miss?",
+    a: [
+      "The browser itself",
+      "The recursive resolver",
+      "Every router on the path",
+    ],
+    correct: 1,
+    why: "The stub asks for recursion. The recursive resolver follows referrals and caches the results.",
+  },
+  tcp: {
+    q: "A segment contains bytes 1001–2000. What cumulative ACK means they all arrived in order?",
+    a: ["1001", "2000", "2001"],
+    correct: 2,
+    why: "ACK identifies the next byte expected. After byte 2000, that is 2001.",
+  },
+  routing: {
+    q: "An installed /24 and /8 both match a destination. Which forwards the packet?",
+    a: [
+      "The /24, even if the /8 has a better metric",
+      "The one with the lowest BGP local preference",
+      "The /8 because it reaches more addresses",
+    ],
+    correct: 0,
+    why: "Forwarding chooses the longest matching prefix. Route metrics select candidates for the same prefix earlier.",
+  },
+  tls: {
+    q: "Which protocol replaces TCP when the browser uses HTTP/3?",
+    a: ["TLS directly over IP", "QUIC over UDP", "An unencrypted UDP stream"],
+    correct: 1,
+    why: "QUIC provides secure transport and streams over UDP, integrating the TLS 1.3 handshake.",
+  },
+  vpn: {
+    q: "With a full VPN tunnel, which IP destination does your ISP route toward?",
+    a: [
+      "The website’s inner destination",
+      "The VPN endpoint’s outer destination",
+      "The local tunnel interface",
+    ],
+    correct: 1,
+    why: "The ISP forwards the visible outer packet. The original destination is inside the encrypted tunnel payload.",
+  },
+  physical: {
+    q: "Doubling a fiber link’s bit rate changes which delay directly?",
+    a: [
+      "Serialization delay",
+      "Propagation delay",
+      "The speed of light in glass",
+    ],
+    correct: 0,
+    why: "The bits are put onto the link faster. Their propagation speed through the medium remains essentially the same.",
+  },
+  switching: {
+    q: "The destination MAC is unknown. How does a switch handle the frame?",
+    a: [
+      "Broadcast it across all VLANs",
+      "Flood eligible ports in the same VLAN",
+      "Ask BGP for a route",
+    ],
+    correct: 1,
+    why: "Unknown unicast is flooded within its VLAN, excluding the ingress port. Source MACs are learned from arriving frames.",
+  },
 };
-function KnowledgeCheck({page,complete}:{page:Page,complete:()=>void}){const [answer,setAnswer]=useState<number|null>(null);const q=checks[page];return <section className="knowledge-check"><div className="knowledge-icon"><BookOpen size={23}/></div><div><span className="eyebrow">CONNECT THE DOTS</span><h3>{q.q}</h3><div className="answer-options">{q.a.map((a,i)=><button className={answer===i?(i===q.correct?'correct':'incorrect'):''} onClick={()=>{setAnswer(i);if(i===q.correct)complete()}} key={a}><span>{String.fromCharCode(65+i)}</span>{a}{answer===i&&(i===q.correct?<Check size={16}/>:<X size={16}/>)}</button>)}</div>{answer!==null&&<p className={answer===q.correct?'correct-feedback':'incorrect-feedback'} role="status">{answer===q.correct?'Exactly. Lab completed. ':'Try another answer. '}{q.why}</p>}</div></section>}
+function KnowledgeCheck({
+  page,
+  complete,
+}: {
+  page: Page;
+  complete: () => void;
+}) {
+  const [answer, setAnswer] = useState<number | null>(null);
+  const q = checks[page];
+  return (
+    <section className="knowledge-check">
+      <div className="knowledge-icon">
+        <BookOpen size={23} />
+      </div>
+      <div>
+        <span className="eyebrow">CONNECT THE DOTS</span>
+        <h3>{q.q}</h3>
+        <div className="answer-options">
+          {q.a.map((a, i) => (
+            <button
+              className={
+                answer === i ? (i === q.correct ? "correct" : "incorrect") : ""
+              }
+              onClick={() => {
+                setAnswer(i);
+                if (i === q.correct) complete();
+              }}
+              key={a}
+            >
+              <span>{String.fromCharCode(65 + i)}</span>
+              {a}
+              {answer === i &&
+                (i === q.correct ? <Check size={16} /> : <X size={16} />)}
+            </button>
+          ))}
+        </div>
+        {answer !== null && (
+          <p
+            className={
+              answer === q.correct ? "correct-feedback" : "incorrect-feedback"
+            }
+            role="status"
+          >
+            {answer === q.correct
+              ? "Exactly. Lab completed. "
+              : "Try another answer. "}
+            {q.why}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
